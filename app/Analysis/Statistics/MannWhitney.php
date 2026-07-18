@@ -48,7 +48,7 @@ final class MannWhitney
         $z = $sigma > 0 ? ($u - $meanU) / $sigma : 0.0;
         $p = 2 * (1 - self::phi(abs($z)));
 
-        return ['u' => $u, 'z' => $z, 'p' => max(0.0, min(1.0, $p))];
+        return ['u' => (float) $u, 'z' => $z, 'p' => max(0.0, min(1.0, $p))];
     }
 
     /** Average-rank assignment with tie handling. @param list<int|float> $values */
