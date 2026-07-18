@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Analysis\Statistics\CohenKappa;
 use App\Analysis\Statistics\EffectSize;
 use App\Analysis\Statistics\MannWhitney;
+use App\Analysis\Statistics\SimpleLinearRegression;
 
 /**
  * Known-answer tests for the hand-implemented non-parametric pieces (the same validation
@@ -70,4 +71,22 @@ it('interprets kappa on the Landis-Koch bands and rejects misaligned samples', f
         ->and(CohenKappa::interpret(0.9))->toBe('almost perfect')
         ->and(CohenKappa::interpret(0.1))->toBe('slight')
         ->and(fn () => CohenKappa::kappa(['a'], []))->toThrow(InvalidArgumentException::class);
+});
+
+it('fits ordinary least squares on hand-computed points', function () {
+    // Same dataset the report test seeds: slope 2, intercept -16, r² = 1 - 4/10 = 0.6.
+    $fit = SimpleLinearRegression::fit([[9, 1], [9, 2], [9, 3], [10, 3], [10, 4], [10, 5]]);
+
+    expect($fit['slope'])->toEqualWithDelta(2.0, 1e-12)
+        ->and($fit['intercept'])->toEqualWithDelta(-16.0, 1e-12)
+        ->and($fit['r2'])->toEqualWithDelta(0.6, 1e-12)
+        ->and($fit['n'])->toBe(6);
+});
+
+it('degrades gracefully on degenerate regression input', function () {
+    // Perfect fit => r² = 1.
+    expect(SimpleLinearRegression::fit([[1, 2], [2, 4], [3, 6]])['r2'])->toEqualWithDelta(1.0, 1e-12)
+        // A single x value has no slope to estimate.
+        ->and(SimpleLinearRegression::fit([[5, 1], [5, 9]])['slope'])->toBe(0.0)
+        ->and(SimpleLinearRegression::fit([])['n'])->toBe(0);
 });

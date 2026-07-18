@@ -6,13 +6,13 @@ namespace App\Console\Commands;
 
 use App\Analysis\Statistics\EffectSize;
 use App\Analysis\Statistics\MannWhitney;
+use App\Analysis\Statistics\SimpleLinearRegression;
 use App\Models\TestObservation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use MathPHP\Statistics\Average;
 use MathPHP\Statistics\Descriptive;
-use MathPHP\Statistics\Regression\Linear;
 
 /**
  * Stage 6 — analysis over the emitted dataset, one compact table per research question:
@@ -98,15 +98,14 @@ class ReportCommand extends Command
                 ->values()
                 ->all();
             if (count(array_unique(array_column($points, 0))) > 1) {
-                $regression = new Linear($points);
-                ['m' => $slope, 'b' => $intercept] = $regression->getParameters();
+                $fit = SimpleLinearRegression::fit($points);
                 $this->line(sprintf(
                     '  trend: %s = %.3f × major %+.3f   (r² = %.3f, n = %d)',
                     $metric,
-                    $slope,
-                    $intercept,
-                    $regression->coefficientOfDetermination(),
-                    count($points),
+                    $fit['slope'],
+                    $fit['intercept'],
+                    $fit['r2'],
+                    $fit['n'],
                 ));
             }
         }
