@@ -9,6 +9,9 @@ use App\Analysis\FrontEnd\FrontEnd;
 use App\Analysis\FrontEnd\PestFrontEnd;
 use App\Analysis\FrontEnd\PhpUnitFrontEnd;
 use App\Analysis\Ir\TestFileRecord;
+use App\Analysis\Tree\GitTree;
+use App\Analysis\Tree\SourceTree;
+use App\Analysis\Tree\WorkingTree;
 use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
@@ -17,12 +20,13 @@ use PhpParser\Error as ParseError;
 
 /**
  * Stages 2-4 — discover the suite, route each test file to the owning FrontEnd by content,
- * and flatten the resulting IR into TestObservation rows. M1 covers --head (the working tree
- * at the acquired HEAD); M2 adds extraction at version-boundary snapshot shas.
+ * and flatten the resulting IR into TestObservation rows. --head reads the working tree at
+ * the acquired HEAD (M1); without it, every version-boundary snapshot is extracted through
+ * `git show` (Instrument A, M2) so the clone is never checked out serially.
  */
 class ExtractCommand extends Command
 {
-    protected $signature = 'analyse:extract {full_name : owner/repo} {--head : extract HEAD only (M1)}';
+    protected $signature = 'analyse:extract {full_name : owner/repo} {--head : extract HEAD only}';
 
     protected $description = 'Parse test suites into the IR and write metric rows to the dataset';
 
@@ -35,12 +39,6 @@ class ExtractCommand extends Command
             return self::FAILURE;
         }
 
-        if (! $this->option('head')) {
-            $this->error('Only --head extraction exists in M1; snapshot extraction arrives with M2.');
-
-            return self::FAILURE;
-        }
-
         $root = (string) $repository->clone_path;
         if (! is_dir($root)) {
             $this->error("Clone path missing on disk: {$root}");
@@ -48,24 +46,64 @@ class ExtractCommand extends Command
             return self::FAILURE;
         }
 
-        $snapshot = Snapshot::updateOrCreate(
-            ['repository_id' => $repository->id, 'kind' => 'head'],
-            ['commit_sha' => (string) $repository->head_sha, 'framework_version' => null],
-        );
+        if ($this->option('head')) {
+            $snapshot = Snapshot::updateOrCreate(
+                ['repository_id' => $repository->id, 'kind' => 'head'],
+                ['commit_sha' => (string) $repository->head_sha, 'framework_version' => null],
+            );
+
+            $observationsPerFrontEnd = $this->extractSnapshot($discovery, $repository, $snapshot, new WorkingTree($root));
+            $repository->update(['primary_test_framework' => $this->primaryFramework($observationsPerFrontEnd)]);
+
+            return self::SUCCESS;
+        }
+
+        $snapshots = $repository->snapshots()
+            ->where('kind', 'version_boundary')
+            ->orderBy('framework_version')
+            ->get();
+
+        if ($snapshots->isEmpty()) {
+            $this->error('No version-boundary snapshots — run analyse:snapshot first, or pass --head.');
+
+            return self::FAILURE;
+        }
+
+        foreach ($snapshots as $snapshot) {
+            $this->line("Snapshot: Laravel {$snapshot->framework_version}");
+            $this->extractSnapshot($discovery, $repository, $snapshot, new GitTree($root, $snapshot->commit_sha));
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Replace one snapshot's observations with a fresh extraction of its tree.
+     *
+     * @return array<string,int> observation count per front-end
+     */
+    private function extractSnapshot(
+        SuiteDiscovery $discovery,
+        Repository $repository,
+        Snapshot $snapshot,
+        SourceTree $tree,
+    ): array {
         $snapshot->observations()->delete();
 
-        $files = $discovery->discover($root);
+        $files = $discovery->discover($tree);
         $frontEnds = [new PhpUnitFrontEnd, new PestFrontEnd];
 
         $rows = [];
-        $parsedPerFrontEnd = [];
+        $observationsPerFrontEnd = [];
         $unroutable = 0;
         $parseFailures = 0;
 
         foreach ($files as $relativePath) {
-            $source = (string) file_get_contents($root.DIRECTORY_SEPARATOR.$relativePath);
+            $source = $tree->read($relativePath);
+            if ($source === null) {
+                continue;
+            }
 
-            $record = null;
             try {
                 $record = $this->routeAndParse($frontEnds, $relativePath, $source);
             } catch (ParseError $e) {
@@ -81,7 +119,7 @@ class ExtractCommand extends Command
                 continue;
             }
 
-            $parsedPerFrontEnd[$record->frontEnd->value] = ($parsedPerFrontEnd[$record->frontEnd->value] ?? 0) + count($record->methods);
+            $observationsPerFrontEnd[$record->frontEnd->value] = ($observationsPerFrontEnd[$record->frontEnd->value] ?? 0) + count($record->methods);
             foreach ($record->methods as $method) {
                 $rows[] = [
                     'snapshot_id' => $snapshot->id,
@@ -109,8 +147,6 @@ class ExtractCommand extends Command
             TestObservation::insert($chunk);
         }
 
-        $repository->update(['primary_test_framework' => $this->primaryFramework($parsedPerFrontEnd)]);
-
         $this->info(sprintf(
             'Extracted %d observations from %d files (%d unroutable, %d parse failures) @ %s.',
             count($rows),
@@ -124,7 +160,7 @@ class ExtractCommand extends Command
             collect($rows)->countBy('test_type')->sortKeys()->map(fn ($n, $type) => [$type, $n])->values()->all(),
         );
 
-        return self::SUCCESS;
+        return $observationsPerFrontEnd;
     }
 
     /** @param list<FrontEnd> $frontEnds */

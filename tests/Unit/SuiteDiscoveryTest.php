@@ -3,6 +3,12 @@
 declare(strict_types=1);
 
 use App\Analysis\Discovery\SuiteDiscovery;
+use App\Analysis\Tree\WorkingTree;
+
+function discoverInRoot(string $root): array
+{
+    return new SuiteDiscovery()->discover(new WorkingTree($root));
+}
 
 beforeEach(function () {
     $this->root = sys_get_temp_dir().'/lta-suite-discovery-'.uniqid();
@@ -50,7 +56,7 @@ it('discovers testsuite directories declared in phpunit.xml', function () {
     writeRepoFile($this->root, 'tests/Browser/GammaTest.php');    // not declared — excluded
     writeRepoFile($this->root, 'tests/Unit/SomeTestCase.php');    // wrong suffix — excluded
 
-    expect(new SuiteDiscovery()->discover($this->root))->toBe([
+    expect(discoverInRoot($this->root))->toBe([
         'tests/Feature/Deep/BetaTest.php',
         'tests/Unit/AlphaTest.php',
     ]);
@@ -76,7 +82,7 @@ it('honours a custom suffix attribute and prefers phpunit.xml over the dist file
     writeRepoFile($this->root, 'specs/OrderSpec.spec.php');
     writeRepoFile($this->root, 'tests/IgnoredTest.php');
 
-    expect(new SuiteDiscovery()->discover($this->root))->toBe(['specs/OrderSpec.spec.php']);
+    expect(discoverInRoot($this->root))->toBe(['specs/OrderSpec.spec.php']);
 });
 
 it('falls back to tests/ with the default suffix when no phpunit config exists', function () {
@@ -84,7 +90,7 @@ it('falls back to tests/ with the default suffix when no phpunit config exists',
     writeRepoFile($this->root, 'tests/Feature/LoginTest.php');
     writeRepoFile($this->root, 'src/NotATest.php');
 
-    expect(new SuiteDiscovery()->discover($this->root))->toBe(['tests/Feature/LoginTest.php']);
+    expect(discoverInRoot($this->root))->toBe(['tests/Feature/LoginTest.php']);
 });
 
 it('returns an empty list when declared directories are missing on disk', function () {
@@ -97,5 +103,5 @@ it('returns an empty list when declared directories are missing on disk', functi
         </phpunit>
         XML);
 
-    expect(new SuiteDiscovery()->discover($this->root))->toBe([]);
+    expect(discoverInRoot($this->root))->toBe([]);
 });

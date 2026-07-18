@@ -97,6 +97,6 @@ it('fails when the repository has not been acquired', function () {
         ->assertFailed();
 });
 
-it('fails without --head because snapshot extraction is an M2 concern', function () {
+it('fails without --head when no version-boundary snapshots exist yet', function () {
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop'])->assertFailed();
 });

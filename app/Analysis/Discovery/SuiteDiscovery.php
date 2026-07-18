@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Analysis\Discovery;
 
-use Symfony\Component\Finder\Finder;
+use App\Analysis\Tree\SourceTree;
 
 /**
  * Locates a mined repository's test files the way its own runner would: from the
@@ -19,22 +19,21 @@ final class SuiteDiscovery
     /**
      * @return list<string> repo-relative test file paths, sorted
      */
-    public function discover(string $repositoryRoot): array
+    public function discover(SourceTree $tree): array
     {
-        $paths = [];
-        foreach ($this->suiteDirectories($repositoryRoot) as [$directory, $suffix]) {
-            $absolute = $repositoryRoot.DIRECTORY_SEPARATOR.$directory;
-            if (! is_dir($absolute)) {
-                continue;
-            }
+        $suites = $this->suiteDirectories($tree);
 
-            $finder = new Finder()->files()->in($absolute)->name('*'.$suffix);
-            foreach ($finder as $file) {
-                $paths[] = $directory.DIRECTORY_SEPARATOR.$file->getRelativePathname();
+        $paths = [];
+        foreach ($tree->files() as $path) {
+            foreach ($suites as [$directory, $suffix]) {
+                if (str_starts_with($path, $directory.'/') && str_ends_with($path, $suffix)) {
+                    $paths[] = $path;
+
+                    break;
+                }
             }
         }
 
-        $paths = array_values(array_unique($paths));
         sort($paths);
 
         return $paths;
@@ -43,15 +42,15 @@ final class SuiteDiscovery
     /**
      * @return list<array{0: string, 1: string}> [directory relative to root, filename suffix]
      */
-    private function suiteDirectories(string $repositoryRoot): array
+    private function suiteDirectories(SourceTree $tree): array
     {
         foreach (['phpunit.xml', 'phpunit.xml.dist'] as $candidate) {
-            $configPath = $repositoryRoot.DIRECTORY_SEPARATOR.$candidate;
-            if (! is_file($configPath)) {
+            $config = $tree->read($candidate);
+            if ($config === null) {
                 continue;
             }
 
-            $declared = $this->directoriesFromConfig($configPath);
+            $declared = $this->directoriesFromConfig($config);
             if ($declared !== []) {
                 return $declared;
             }
@@ -63,9 +62,9 @@ final class SuiteDiscovery
     /**
      * @return list<array{0: string, 1: string}>
      */
-    private function directoriesFromConfig(string $configPath): array
+    private function directoriesFromConfig(string $config): array
     {
-        $xml = @simplexml_load_string((string) file_get_contents($configPath));
+        $xml = @simplexml_load_string($config);
         if ($xml === false) {
             return [];
         }
