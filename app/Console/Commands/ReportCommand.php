@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Analysis\Reporting\DatasetQueries;
 use App\Analysis\Statistics\EffectSize;
 use App\Analysis\Statistics\MannWhitney;
 use App\Analysis\Statistics\SimpleLinearRegression;
@@ -31,19 +32,11 @@ class ReportCommand extends Command
 
     protected $description = 'Produce descriptive trends, version regression, and pre/post-AI comparison';
 
-    private const array METRICS = [
-        'assertion_count',
-        'mock_breadth',
-        'max_mock_chain_depth',
-        'size_statements',
-        'size_loc',
-    ];
-
     public function handle(): int
     {
         $metrics = $this->metrics();
         if ($metrics === []) {
-            $this->error('Unknown metric — choose from: '.implode(', ', self::METRICS));
+            $this->error('Unknown metric — choose from: '.implode(', ', DatasetQueries::METRICS));
 
             return self::FAILURE;
         }
@@ -57,14 +50,7 @@ class ReportCommand extends Command
     /** @param list<string> $metrics */
     private function reportVersionTrends(array $metrics): void
     {
-        $observations = TestObservation::query()
-            ->join('snapshots', 'snapshots.id', '=', 'test_observations.snapshot_id')
-            ->where('snapshots.kind', 'version_boundary')
-            ->select(array_merge(
-                array_map(fn (string $m): string => "test_observations.{$m}", $metrics),
-                ['snapshots.framework_version as major'],
-            ))
-            ->get();
+        $observations = DatasetQueries::versionBoundaryObservations();
 
         $this->components->info('Instrument A — per-major state (version-boundary snapshots)');
 
@@ -117,7 +103,7 @@ class ReportCommand extends Command
         $cutoff = $this->cutoff();
         $this->components->info("Instrument B — authored flow, pre/post-AI (cutoff {$cutoff->toDateString()})");
 
-        $methods = $this->onePerAuthoredMethod();
+        $methods = DatasetQueries::onePerAuthoredMethod();
         if ($methods->isEmpty()) {
             $this->warn('No blamed observations — run analyse:blame first.');
 
@@ -166,25 +152,6 @@ class ReportCommand extends Command
         );
     }
 
-    /**
-     * One observation per authored test method — the earliest snapshot in which the method
-     * appears, i.e. the state closest to how it was written (Instrument B measures flow;
-     * using a late snapshot would measure subsequent maintenance instead).
-     *
-     * @return Collection<int, TestObservation>
-     */
-    private function onePerAuthoredMethod(): Collection
-    {
-        return TestObservation::query()
-            ->leftJoin('snapshots', 'snapshots.id', '=', 'test_observations.snapshot_id')
-            ->whereNotNull('test_observations.introduced_author_date')
-            ->select('test_observations.*', 'snapshots.framework_version as major')
-            ->orderByRaw('snapshots.framework_version IS NULL, snapshots.framework_version')
-            ->get()
-            ->unique(fn (TestObservation $o): string => "{$o->repository_id}|{$o->front_end}|{$o->file_path}|{$o->identifier}")
-            ->values();
-    }
-
     private function cutoff(): Carbon
     {
         $explicit = $this->option('cutoff');
@@ -202,9 +169,9 @@ class ReportCommand extends Command
     {
         $only = $this->option('metric');
         if (! is_string($only) || $only === '') {
-            return self::METRICS;
+            return DatasetQueries::METRICS;
         }
 
-        return in_array($only, self::METRICS, true) ? [$only] : [];
+        return in_array($only, DatasetQueries::METRICS, true) ? [$only] : [];
     }
 }
