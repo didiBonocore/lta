@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Analysis\Statistics\CohenKappa;
 use App\Analysis\Statistics\EffectSize;
 use App\Analysis\Statistics\MannWhitney;
 
@@ -50,4 +51,23 @@ it('reports no effect for identical groups and degenerate input', function () {
         ->and($identical['p'])->toEqualWithDelta(1.0, 1e-6) // erf approximation error ~1.5e-7
         ->and(MannWhitney::test([], [1, 2])['p'])->toBe(1.0)
         ->and(EffectSize::cliffsDelta([], []))->toBe(0.0);
+});
+
+it('computes Cohen\'s kappa on hand-computed label sets', function () {
+    // Observed agreement 8/10, balanced marginals => p_e = 0.5 => kappa = 0.6.
+    $rater1 = ['a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b'];
+    $rater2 = ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'a'];
+
+    expect(CohenKappa::kappa($rater1, $rater2))->toEqualWithDelta(0.6, 1e-12)
+        // Perfect agreement => 1.
+        ->and(CohenKappa::kappa(['u', 'f', 'i'], ['u', 'f', 'i']))->toBe(1.0)
+        // Chance-level agreement => 0.
+        ->and(CohenKappa::kappa(['a', 'b', 'a', 'b'], ['a', 'a', 'b', 'b']))->toEqualWithDelta(0.0, 1e-12);
+});
+
+it('interprets kappa on the Landis-Koch bands and rejects misaligned samples', function () {
+    expect(CohenKappa::interpret(0.65))->toBe('substantial')
+        ->and(CohenKappa::interpret(0.9))->toBe('almost perfect')
+        ->and(CohenKappa::interpret(0.1))->toBe('slight')
+        ->and(fn () => CohenKappa::kappa(['a'], []))->toThrow(InvalidArgumentException::class);
 });
