@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Analysis\FrontEnd\PestFrontEnd;
 use App\Analysis\FrontEnd\PhpUnitFrontEnd;
 use App\Analysis\Ir\Enums\TestType;
@@ -16,7 +18,7 @@ function parseFixture(string $relative): TestFileRecord
 {
     $path = __DIR__.'/../Fixtures/'.$relative;
     $source = file_get_contents($path);
-    $frontEnd = str_starts_with($relative, 'PhpUnit/') ? new PhpUnitFrontEnd() : new PestFrontEnd();
+    $frontEnd = str_starts_with($relative, 'PhpUnit/') ? new PhpUnitFrontEnd : new PestFrontEnd;
 
     $file = $frontEnd->parse($path, $source);
     expect($file)->not->toBeNull();

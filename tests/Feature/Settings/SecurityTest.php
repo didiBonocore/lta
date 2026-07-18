@@ -5,8 +5,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
-beforeEach(function () {
-});
+beforeEach(function () {});
 
 test('security settings page can be rendered', function () {
     $user = User::factory()->create();

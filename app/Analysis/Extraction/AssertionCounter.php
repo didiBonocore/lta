@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Extraction;
 
 use PhpParser\Node;
@@ -27,7 +29,7 @@ final class AssertionCounter
     /** @param Node[] $body statements of a test method / closure */
     public function count(array $body): int
     {
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
 
         $calls = $finder->find($body, static function (Node $n): bool {
             if (! ($n instanceof MethodCall

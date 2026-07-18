@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\FrontEnd;
 
 use App\Analysis\Ir\Enums\FrontEndKind;
@@ -45,7 +47,7 @@ final class PestFrontEnd extends AbstractFrontEnd
         // it as "Pest\TestCase" unless a uses(SomethingTestCase::class) overrides it.
         $baseClass = 'PestTestCase';
 
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
         $methods = [];
         foreach ($finder->findInstanceOf($ast, FuncCall::class) as $call) {
             $name = $call->name instanceof Node\Name ? $call->name->getLast() : null;
@@ -73,7 +75,7 @@ final class PestFrontEnd extends AbstractFrontEnd
     /** Resolve uses(A::class, B::class) at file level into trait/base simple-names. */
     private function fileLevelTraits(array $ast): array
     {
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
         $names = [];
         foreach ($finder->findInstanceOf($ast, FuncCall::class) as $call) {
             $fname = $call->name instanceof Node\Name ? $call->name->getLast() : null;

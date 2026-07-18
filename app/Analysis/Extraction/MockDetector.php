@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Extraction;
 
 use App\Analysis\Ir\Enums\MockKind;
@@ -24,7 +26,9 @@ use PhpParser\NodeFinder;
 final class MockDetector
 {
     private const CONTAINER_METHODS = ['mock', 'partialMock', 'spy', 'instance'];
+
     private const PHPUNIT_METHODS = ['createMock', 'createStub', 'createPartialMock', 'getMockBuilder'];
+
     private const FACADE_CLASSES = [
         'Http', 'Queue', 'Event', 'Storage', 'Mail', 'Bus', 'Notification', 'Cache', 'Log',
     ];
@@ -32,7 +36,7 @@ final class MockDetector
     /** @param Node[] $body */
     public function detect(array $body): array
     {
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
 
         // 1. Index every MethodCall that is an inner receiver of another MethodCall.
         //    A "chain root" is any MethodCall not appearing as another's ->var.

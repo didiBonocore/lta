@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Statistics;
 
 /**
@@ -14,8 +16,8 @@ namespace App\Analysis\Statistics;
 final class MannWhitney
 {
     /**
-     * @param list<int|float> $group1
-     * @param list<int|float> $group2
+     * @param  list<int|float>  $group1
+     * @param  list<int|float>  $group2
      * @return array{u: float, z: float, p: float}
      */
     public static function test(array $group1, array $group2): array

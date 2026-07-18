@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Extraction;
 
 use PhpParser\Node;
@@ -23,7 +25,7 @@ final class CallName
             $node instanceof MethodCall,
             $node instanceof NullsafeMethodCall,
             $node instanceof StaticCall => $node->name,
-            $node instanceof FuncCall   => $node->name,
+            $node instanceof FuncCall => $node->name,
             default => null,
         };
 
