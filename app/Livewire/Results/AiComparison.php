@@ -8,6 +8,7 @@ use App\Analysis\Reporting\DatasetQueries;
 use App\Analysis\Statistics\EffectSize;
 use App\Analysis\Statistics\MannWhitney;
 use App\Models\TestObservation;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
 use MathPHP\Statistics\Average;
@@ -21,7 +22,7 @@ class AiComparison extends Component
 {
     public string $anchor = 'primary';
 
-    public function render()
+    public function render(): View
     {
         if (! in_array($this->anchor, ['primary', 'sensitivity'], true)) {
             $this->anchor = 'primary';
@@ -38,8 +39,8 @@ class AiComparison extends Component
         $rows = [];
         if ($pre->isNotEmpty() && $post->isNotEmpty()) {
             foreach (DatasetQueries::METRICS as $metric) {
-                $preValues = $pre->pluck($metric)->map(fn ($v) => (float) $v)->values()->all();
-                $postValues = $post->pluck($metric)->map(fn ($v) => (float) $v)->values()->all();
+                $preValues = array_values($pre->pluck($metric)->map(fn ($v) => (float) $v)->all());
+                $postValues = array_values($post->pluck($metric)->map(fn ($v) => (float) $v)->all());
 
                 $test = MannWhitney::test($preValues, $postValues);
                 $delta = EffectSize::cliffsDelta($preValues, $postValues);

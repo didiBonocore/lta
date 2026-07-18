@@ -79,10 +79,9 @@ class ReportCommand extends Command
                 })->values()->all(),
             );
 
-            $points = $observations
+            $points = array_values($observations
                 ->map(fn ($o): array => [(float) $o->major, (float) $o->{$metric}])
-                ->values()
-                ->all();
+                ->all());
             if (count(array_unique(array_column($points, 0))) > 1) {
                 $fit = SimpleLinearRegression::fit($points);
                 $this->line(sprintf(
@@ -126,8 +125,8 @@ class ReportCommand extends Command
 
         $rows = [];
         foreach ($metrics as $metric) {
-            $preValues = $pre->pluck($metric)->map(fn ($v) => (float) $v)->values()->all();
-            $postValues = $post->pluck($metric)->map(fn ($v) => (float) $v)->values()->all();
+            $preValues = array_values($pre->pluck($metric)->map(fn ($v) => (float) $v)->all());
+            $postValues = array_values($post->pluck($metric)->map(fn ($v) => (float) $v)->all());
 
             $test = MannWhitney::test($preValues, $postValues);
             $delta = EffectSize::cliffsDelta($preValues, $postValues);

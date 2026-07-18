@@ -17,11 +17,13 @@ class Snapshot extends Model
         'framework_version' => 'integer',
     ];
 
+    /** @return BelongsTo<Repository, $this> */
     public function repository(): BelongsTo
     {
         return $this->belongsTo(Repository::class);
     }
 
+    /** @return HasMany<TestObservation, $this> */
     public function observations(): HasMany
     {
         return $this->hasMany(TestObservation::class);

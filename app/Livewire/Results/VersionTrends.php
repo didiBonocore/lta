@@ -6,6 +6,7 @@ namespace App\Livewire\Results;
 
 use App\Analysis\Reporting\DatasetQueries;
 use App\Analysis\Statistics\SimpleLinearRegression;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 use MathPHP\Statistics\Average;
@@ -18,7 +19,7 @@ class VersionTrends extends Component
 {
     public string $metric = 'assertion_count';
 
-    public function render()
+    public function render(): View
     {
         if (! in_array($this->metric, DatasetQueries::METRICS, true)) {
             $this->metric = 'assertion_count';
@@ -41,9 +42,9 @@ class VersionTrends extends Component
             })
             ->values();
 
-        $fit = SimpleLinearRegression::fit(
-            $observations->map(fn ($o): array => [(float) $o->major, (float) $o->{$this->metric}])->values()->all(),
-        );
+        $fit = SimpleLinearRegression::fit(array_values(
+            $observations->map(fn ($o): array => [(float) $o->major, (float) $o->{$this->metric}])->all(),
+        ));
 
         return view('livewire.results.version-trends', [
             'metrics' => DatasetQueries::METRICS,

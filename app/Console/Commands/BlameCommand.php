@@ -135,7 +135,7 @@ class BlameCommand extends Command
 
         $first = strtok(trim($result->output()), "\n");
 
-        return $first === false || $first === '' ? null : $this->splitLogLine($first);
+        return $first === false ? null : $this->splitLogLine($first);
     }
 
     /** @return array{0: string, 1: string}|null */

@@ -67,7 +67,10 @@ abstract class AbstractFrontEnd implements FrontEnd
         );
     }
 
-    /** @param Node[] $body @return array<string,int> */
+    /**
+     * @param  Node[]  $body
+     * @return array<string, int>
+     */
     protected function setupSignals(array $body): array
     {
         $finder = new NodeFinder;

@@ -33,7 +33,10 @@ final class MockDetector
         'Http', 'Queue', 'Event', 'Storage', 'Mail', 'Bus', 'Notification', 'Cache', 'Log',
     ];
 
-    /** @param Node[] $body */
+    /**
+     * @param  Node[]  $body
+     * @return list<MockRecord>
+     */
     public function detect(array $body): array
     {
         $finder = new NodeFinder;
@@ -94,7 +97,12 @@ final class MockDetector
         return $mc->var instanceof Node\Expr\Variable && $mc->var->name === 'this';
     }
 
-    /** Count MethodCall hops in the chain whose innermost receiver is $root. */
+    /**
+     * Count MethodCall hops in the chain whose innermost receiver is $root.
+     *
+     * @param  array<int, true>  $innerIds  spl_object_id set of calls that are inner receivers
+     * @param  array<int, MethodCall>  $all  as produced by NodeFinder::findInstanceOf
+     */
     private function chainDepthFrom(MethodCall $root, array $innerIds, array $all): int
     {
         // Walk outward to a fixpoint: repeatedly find the MethodCall that wraps the current

@@ -72,7 +72,12 @@ final class PestFrontEnd extends AbstractFrontEnd
         return new TestFileRecord($path, $this->kind(), $baseClass, $traits, $methods);
     }
 
-    /** Resolve uses(A::class, B::class) at file level into trait/base simple-names. */
+    /**
+     * Resolve uses(A::class, B::class) at file level into trait/base simple-names.
+     *
+     * @param  Node\Stmt[]  $ast
+     * @return list<string>
+     */
     private function fileLevelTraits(array $ast): array
     {
         $finder = new NodeFinder;
@@ -83,7 +88,8 @@ final class PestFrontEnd extends AbstractFrontEnd
                 continue;
             }
             foreach ($call->args as $arg) {
-                if ($arg->value instanceof Node\Expr\ClassConstFetch
+                if ($arg instanceof Node\Arg
+                    && $arg->value instanceof Node\Expr\ClassConstFetch
                     && $arg->value->class instanceof Node\Name) {
                     $names[] = $arg->value->class->getLast();
                 }
@@ -99,6 +105,9 @@ final class PestFrontEnd extends AbstractFrontEnd
         $description = null;
         $closure = null;
         foreach ($call->args as $arg) {
+            if (! $arg instanceof Node\Arg) {
+                continue;
+            }
             if ($arg->value instanceof String_ && $description === null) {
                 $description = $arg->value->value;
             } elseif ($arg->value instanceof Closure || $arg->value instanceof ArrowFunction) {

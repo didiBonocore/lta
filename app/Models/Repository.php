@@ -16,11 +16,13 @@ class Repository extends Model
         'cloned_at' => 'datetime',
     ];
 
+    /** @return HasMany<Snapshot, $this> */
     public function snapshots(): HasMany
     {
         return $this->hasMany(Snapshot::class);
     }
 
+    /** @return HasMany<TestObservation, $this> */
     public function observations(): HasMany
     {
         return $this->hasMany(TestObservation::class);
