@@ -28,4 +28,10 @@ class Snapshot extends Model
     {
         return $this->hasMany(TestObservation::class);
     }
+
+    /** @return HasMany<ParseFailure, $this> */
+    public function parseFailures(): HasMany
+    {
+        return $this->hasMany(ParseFailure::class);
+    }
 }

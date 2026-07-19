@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Models\ParseFailure;
 use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Support\Facades\File;
+use Tests\Support\GitFixtureRepo;
 
 /**
  * The fake "cloned" repository is assembled from the M0 gold-standard fixtures, so every
@@ -83,13 +85,58 @@ it('is idempotent: re-extracting replaces rather than duplicates observations', 
         ->and(TestObservation::count())->toBe(2);
 });
 
-it('survives an unparsable test file and keeps extracting the rest', function () {
+it('survives an unparsable test file, records it, and keeps extracting the rest', function () {
     File::put($this->root.'/tests/Unit/BrokenTest.php', "<?php\n\nclass BrokenTest extends TestCase {\n    public function test_broken() { \$x = ;\n");
 
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
         ->assertSuccessful();
 
     expect(TestObservation::count())->toBe(2);
+
+    $failure = ParseFailure::sole();
+    expect($failure->file_path)->toBe('tests/Unit/BrokenTest.php')
+        ->and($failure->commit_sha)->toBe('deadbeef')
+        ->and($failure->repository_id)->toBe($this->repository->id)
+        ->and($failure->message)->not->toBe('');
+
+    // Re-running replaces the failure log too — no duplicates.
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
+    expect(ParseFailure::count())->toBe(1);
+});
+
+it('extracts from a synthetic git repository built on the fly', function () {
+    $repo = GitFixtureRepo::init(base_path('storage/framework/testing/extract-git-repo'));
+    $repo->write('phpunit.xml', <<<'XML'
+        <?xml version="1.0"?>
+        <phpunit>
+            <testsuites>
+                <testsuite name="All"><directory>tests</directory></testsuite>
+            </testsuites>
+        </phpunit>
+        XML);
+    $repo->write('tests/Feature/LoginTest.php', (string) file_get_contents(base_path('tests/Fixtures/PhpUnit/FeatureLoginExample.php')));
+    $repo->write('tests/Unit/GatewayTest.php', (string) file_get_contents(base_path('tests/Fixtures/Pest/UnitGatewayExample.php')));
+    $headSha = $repo->commit('two fixture-style tests', '2024-01-01T10:00:00Z');
+
+    Repository::create([
+        'full_name' => 'acme/git-shop',
+        'owner' => 'acme',
+        'name' => 'git-shop',
+        'url' => 'https://github.com/acme/git-shop.git',
+        'clone_path' => $repo->root,
+        'head_sha' => $headSha,
+    ]);
+
+    $this->artisan('analyse:extract', ['full_name' => 'acme/git-shop', '--head' => true])
+        ->assertSuccessful();
+
+    $observations = TestObservation::whereRelation('repository', 'full_name', 'acme/git-shop')->get();
+    expect($observations)->toHaveCount(2)
+        ->and($observations->firstWhere('front_end', 'phpunit')->file_path)->toBe('tests/Feature/LoginTest.php')
+        ->and($observations->firstWhere('front_end', 'pest')->file_path)->toBe('tests/Unit/GatewayTest.php')
+        ->and(Snapshot::whereRelation('repository', 'full_name', 'acme/git-shop')->sole()->commit_sha)->toBe($headSha);
+
+    $repo->destroy();
 });
 
 it('fails when the repository has not been acquired', function () {
