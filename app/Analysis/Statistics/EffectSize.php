@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Statistics;
 
 /**
@@ -17,8 +19,8 @@ namespace App\Analysis\Statistics;
 final class EffectSize
 {
     /**
-     * @param list<int|float> $a
-     * @param list<int|float> $b
+     * @param  list<int|float>  $a
+     * @param  list<int|float>  $b
      */
     public static function cliffsDelta(array $a, array $b): float
     {
@@ -49,9 +51,9 @@ final class EffectSize
 
         return match (true) {
             $d < 0.147 => 'negligible',
-            $d < 0.33  => 'small',
+            $d < 0.33 => 'small',
             $d < 0.474 => 'medium',
-            default    => 'large',
+            default => 'large',
         };
     }
 }

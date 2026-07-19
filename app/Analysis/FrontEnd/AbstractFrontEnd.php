@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\FrontEnd;
 
 use App\Analysis\Classification\TestTypeClassifier;
@@ -23,18 +25,18 @@ abstract class AbstractFrontEnd implements FrontEnd
     protected Parser $parser;
 
     public function __construct(
-        protected AssertionCounter $assertions = new AssertionCounter(),
-        protected MockDetector $mocks = new MockDetector(),
-        protected TestTypeClassifier $classifier = new TestTypeClassifier(),
+        protected AssertionCounter $assertions = new AssertionCounter,
+        protected MockDetector $mocks = new MockDetector,
+        protected TestTypeClassifier $classifier = new TestTypeClassifier,
     ) {
-        $this->parser = (new ParserFactory())->createForNewestSupportedVersion();
+        $this->parser = (new ParserFactory)->createForNewestSupportedVersion();
     }
 
     abstract protected function kind(): FrontEndKind;
 
     /**
-     * @param Node[] $body statements of the test
-     * @param list<string> $traits
+     * @param  Node[]  $body  statements of the test
+     * @param  list<string>  $traits
      */
     protected function buildMethod(
         string $identifier,
@@ -46,7 +48,7 @@ abstract class AbstractFrontEnd implements FrontEnd
         [$type, $rule] = $this->classifier->classify($body, $traits, $baseClass);
         $mocks = $this->mocks->detect($body);
 
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
         $statements = $finder->find($body, static fn (Node $n): bool => $n instanceof Node\Stmt);
 
         return new TestMethodRecord(
@@ -65,10 +67,13 @@ abstract class AbstractFrontEnd implements FrontEnd
         );
     }
 
-    /** @param Node[] $body @return array<string,int> */
+    /**
+     * @param  Node[]  $body
+     * @return array<string, int>
+     */
     protected function setupSignals(array $body): array
     {
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
         $signals = [];
         foreach ($finder->find($body, static fn (Node $n): bool => $n instanceof Node\Expr\MethodCall || $n instanceof Node\Expr\StaticCall) as $call) {
             $name = CallName::of($call);

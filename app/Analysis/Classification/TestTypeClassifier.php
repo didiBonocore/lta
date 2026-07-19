@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Classification;
 
 use App\Analysis\Extraction\CallName;
@@ -27,18 +29,20 @@ final class TestTypeClassifier
         'get', 'getJson', 'post', 'postJson', 'put', 'putJson', 'patch', 'patchJson',
         'delete', 'deleteJson', 'options', 'head', 'call', 'json',
     ];
+
     private const DB_ASSERTIONS = ['assertDatabaseHas', 'assertDatabaseMissing', 'assertDatabaseCount'];
+
     private const DB_TRAITS = ['RefreshDatabase', 'DatabaseTransactions', 'DatabaseMigrations'];
 
     /**
-     * @param Node[] $body   test method / closure statements
-     * @param list<string> $traits file/class-level trait simple-names
-     * @param string|null $baseClass simple name of the extended base class
+     * @param  Node[]  $body  test method / closure statements
+     * @param  list<string>  $traits  file/class-level trait simple-names
+     * @param  string|null  $baseClass  simple name of the extended base class
      * @return array{0: TestType, 1: string}
      */
     public function classify(array $body, array $traits, ?string $baseClass): array
     {
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
 
         $hasHttp = (bool) $finder->findFirst($body, function (Node $n): bool {
             return $n instanceof MethodCall

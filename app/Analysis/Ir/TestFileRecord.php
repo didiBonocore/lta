@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Ir;
 
 use App\Analysis\Ir\Enums\FrontEndKind;
@@ -11,8 +13,8 @@ use App\Analysis\Ir\Enums\FrontEndKind;
 final class TestFileRecord
 {
     /**
-     * @param list<TestMethodRecord> $methods
-     * @param list<string> $traits   simple names of traits used at file/class level
+     * @param  list<TestMethodRecord>  $methods
+     * @param  list<string>  $traits  simple names of traits used at file/class level
      */
     public function __construct(
         public string $path,

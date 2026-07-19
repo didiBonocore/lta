@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Extraction;
 
 use App\Analysis\Ir\Enums\MockKind;
@@ -24,15 +26,20 @@ use PhpParser\NodeFinder;
 final class MockDetector
 {
     private const CONTAINER_METHODS = ['mock', 'partialMock', 'spy', 'instance'];
+
     private const PHPUNIT_METHODS = ['createMock', 'createStub', 'createPartialMock', 'getMockBuilder'];
+
     private const FACADE_CLASSES = [
         'Http', 'Queue', 'Event', 'Storage', 'Mail', 'Bus', 'Notification', 'Cache', 'Log',
     ];
 
-    /** @param Node[] $body */
+    /**
+     * @param  Node[]  $body
+     * @return list<MockRecord>
+     */
     public function detect(array $body): array
     {
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
 
         // 1. Index every MethodCall that is an inner receiver of another MethodCall.
         //    A "chain root" is any MethodCall not appearing as another's ->var.
@@ -90,7 +97,12 @@ final class MockDetector
         return $mc->var instanceof Node\Expr\Variable && $mc->var->name === 'this';
     }
 
-    /** Count MethodCall hops in the chain whose innermost receiver is $root. */
+    /**
+     * Count MethodCall hops in the chain whose innermost receiver is $root.
+     *
+     * @param  array<int, true>  $innerIds  spl_object_id set of calls that are inner receivers
+     * @param  array<int, MethodCall>  $all  as produced by NodeFinder::findInstanceOf
+     */
     private function chainDepthFrom(MethodCall $root, array $innerIds, array $all): int
     {
         // Walk outward to a fixpoint: repeatedly find the MethodCall that wraps the current

@@ -1,17 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('snapshots', function (Blueprint $table) {
             $table->id();
             $table->foreignId('repository_id')->constrained()->cascadeOnDelete();
             $table->string('commit_sha');
-            $table->unsignedTinyInteger('framework_version'); // integer Laravel major
+            // Integer Laravel major (Instrument A). Null for kind=head snapshots (M1), which
+            // exist to exercise the extraction core and are resolved to majors only in M2.
+            $table->unsignedTinyInteger('framework_version')->nullable();
             $table->string('kind')->default('version_boundary');
             $table->timestamp('commit_date')->nullable();
             $table->timestamps();

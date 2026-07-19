@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\Statistics;
 
 /**
@@ -14,8 +16,8 @@ namespace App\Analysis\Statistics;
 final class MannWhitney
 {
     /**
-     * @param list<int|float> $group1
-     * @param list<int|float> $group2
+     * @param  list<int|float>  $group1
+     * @param  list<int|float>  $group2
      * @return array{u: float, z: float, p: float}
      */
     public static function test(array $group1, array $group2): array
@@ -46,10 +48,15 @@ final class MannWhitney
         $z = $sigma > 0 ? ($u - $meanU) / $sigma : 0.0;
         $p = 2 * (1 - self::phi(abs($z)));
 
-        return ['u' => $u, 'z' => $z, 'p' => max(0.0, min(1.0, $p))];
+        return ['u' => (float) $u, 'z' => $z, 'p' => max(0.0, min(1.0, $p))];
     }
 
-    /** Average-rank assignment with tie handling. @param list<int|float> $values */
+    /**
+     * Average-rank assignment with tie handling.
+     *
+     * @param  list<int|float>  $values
+     * @return array<int, float> rank per input index
+     */
     private static function rank(array $values): array
     {
         $indexed = [];
@@ -66,7 +73,7 @@ final class MannWhitney
             while ($j + 1 < $count && $indexed[$j + 1]['v'] === $indexed[$k]['v']) {
                 $j++;
             }
-            $avgRank = (($k + 1) + ($j + 1)) / 2; // ranks are 1-based
+            $avgRank = (float) ((($k + 1) + ($j + 1)) / 2); // ranks are 1-based
             for ($m = $k; $m <= $j; $m++) {
                 $ranks[$indexed[$m]['i']] = $avgRank;
             }
@@ -76,7 +83,10 @@ final class MannWhitney
         return $ranks;
     }
 
-    /** @param list<int|float> $values @return list<int> sizes of tie groups with size > 1 */
+    /**
+     * @param  list<int|float>  $values
+     * @return list<int> sizes of tie groups with size > 1
+     */
     private static function tieGroupSizes(array $values): array
     {
         $counts = [];

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Analysis\FrontEnd;
 
 use App\Analysis\Ir\Enums\FrontEndKind;
@@ -36,7 +38,7 @@ final class PhpUnitFrontEnd extends AbstractFrontEnd
             return null;
         }
 
-        $finder = new NodeFinder();
+        $finder = new NodeFinder;
         /** @var Class_|null $class */
         $class = $finder->findFirst($ast, static fn (Node $n): bool => $n instanceof Class_ && $n->extends !== null);
         if ($class === null) {
