@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 use App\Analysis\Versioning\LaravelMajorResolver;
 
-it('resolves real-world framework constraints to integer majors', function (?string $constraint, ?int $expected) {
+it('resolves constraint shapes to integer majors (minimum major on ranges and unions)', function (?string $constraint, ?int $expected) {
     expect(new LaravelMajorResolver()->resolve($constraint))->toBe($expected);
 })->with([
-    'caret' => ['^13.0', 13],
-    'caret minor' => ['^11.31', 11],
-    'tilde patch' => ['~5.8.0', 5],
+    'caret' => ['^11.0', 11],
+    'caret minor' => ['^13.17', 13],
     'tilde' => ['~5.8', 5],
-    'range lower bound wins' => ['>=5.5 <6.0', 5],
-    'wildcard' => ['5.*', 5],
+    'tilde patch' => ['~5.8.0', 5],
+    'wildcard' => ['5.8.*', 5],
     'legacy wildcard' => ['4.2.*', 4],
+    'range takes the minimum major' => ['>=9 <11', 9],
+    'range, bounds reversed in the text' => ['<11 >=9', 9],
+    'multi-constraint takes the minimum major' => ['^10|^11', 10],
+    'double pipe union' => ['^8.0 || ^9.0', 8],
     'v prefix' => ['v10.0.1', 10],
     'x-dev branch' => ['10.x-dev', 10],
-    'or takes the highest major' => ['^9.0|^10.0', 10],
-    'double pipe or' => ['^8.0 || ^9.0', 9],
-    'dev branch is unresolvable' => ['dev-master', null],
-    'pure wildcard is unresolvable' => ['*', null],
+    'dev branch is unparseable' => ['dev-master', null],
+    'pure wildcard is unparseable' => ['*', null],
     'empty' => ['', null],
     'null' => [null, null],
 ]);
