@@ -16,20 +16,31 @@ use MathPHP\Statistics\Average;
 use MathPHP\Statistics\Descriptive;
 
 /**
- * Stage 6 — analysis over the emitted dataset, one compact table per research question:
- * SRQ1/2 (Instrument A): per-major descriptives + a least-squares trend on framework major,
- * over version-boundary snapshot observations (state).
- * SRQ3 (Instrument B): pre/post-AI comparison via Mann-Whitney U + Cliff's delta over one
- * observation per authored test method (flow), re-bucketed from introduced_author_date so
- * the sensitivity cutoff can be swapped in without re-running the blame pass.
+ * Stage 6 — analysis over the emitted dataset, one block per research question:
+ * (a) per-major descriptives (n, mean, median, sd, IQR) and (b) an OLS trend on integer
+ * major, over version-boundary observations (Instrument A — state);
+ * (c) the pre/post-AI comparison via Mann-Whitney U + Cliff's delta over one observation
+ * per authored method (Instrument B — flow), re-bucketed from introduced_author_date so
+ * `--cutoff=` sensitivity runs need no re-blame;
+ * (d) test-type distribution per version and per AI window as percentage tables (H1).
+ * `--export=path.csv` writes each block to its own CSV (path suffixed per block) so
+ * dissertation figures are generated from command output, not screenshots.
+ * Statistical tests refuse (warning, not crash) below n=5 per group.
  */
 class ReportCommand extends Command
 {
+    /** Minimum group size for the non-parametric tests; below this we refuse, not crash. */
+    private const int GROUP_FLOOR = 5;
+
     protected $signature = 'analyse:report
         {--metric= : restrict to one metric}
-        {--cutoff= : override the configured ai_cutoff (sensitivity runs)}';
+        {--cutoff= : override the configured ai_cutoff (sensitivity runs)}
+        {--export= : base .csv path; each block is written to <base>_<block>.csv}';
 
     protected $description = 'Produce descriptive trends, version regression, and pre/post-AI comparison';
+
+    /** @var array<string, array{header: list<string>, rows: list<list<string|int|float>>}> */
+    private array $csvBlocks = [];
 
     public function handle(): int
     {
@@ -40,14 +51,24 @@ class ReportCommand extends Command
             return self::FAILURE;
         }
 
-        $this->reportVersionTrends($metrics);
-        $this->reportAiWindows($metrics);
+        $this->reportVersionBlocks($metrics);
+        $this->reportAiComparison($metrics);
+        $this->reportTypeDistributions();
+
+        $exportBase = $this->option('export');
+        if (is_string($exportBase) && $exportBase !== '') {
+            $this->exportCsv($exportBase);
+        }
 
         return self::SUCCESS;
     }
 
-    /** @param list<string> $metrics */
-    private function reportVersionTrends(array $metrics): void
+    /**
+     * Blocks (a) descriptives and (b) regression, per metric.
+     *
+     * @param  list<string>  $metrics
+     */
+    private function reportVersionBlocks(array $metrics): void
     {
         $observations = DatasetQueries::versionBoundaryObservations();
 
@@ -59,24 +80,28 @@ class ReportCommand extends Command
             return;
         }
 
+        $descriptives = ['header' => ['metric', 'framework_version', 'n', 'mean', 'median', 'sd', 'iqr'], 'rows' => []];
+        $regression = ['header' => ['metric', 'slope', 'intercept', 'r2', 'n'], 'rows' => []];
+
         foreach ($metrics as $metric) {
-            $byMajor = $observations->groupBy('major')->sortKeys();
+            $tableRows = [];
+            foreach ($observations->groupBy('major')->sortKeys() as $major => $group) {
+                $values = $group->pluck($metric)->map(fn ($v) => (float) $v)->all();
+                $row = [
+                    $metric,
+                    $major,
+                    count($values),
+                    sprintf('%.2f', Average::mean($values)),
+                    sprintf('%.2f', Average::median($values)),
+                    sprintf('%.2f', count($values) > 1 ? Descriptive::standardDeviation($values) : 0.0),
+                    sprintf('%.2f', count($values) > 1 ? Descriptive::interquartileRange($values) : 0.0),
+                ];
+                $descriptives['rows'][] = $row;
+                $tableRows[] = array_slice($row, 1);
+            }
 
             $this->line("• {$metric}");
-            $this->table(
-                ['Laravel major', 'n', 'mean', 'median', 'sd'],
-                $byMajor->map(function (Collection $group, int $major) use ($metric): array {
-                    $values = $group->pluck($metric)->map(fn ($v) => (float) $v)->all();
-
-                    return [
-                        $major,
-                        count($values),
-                        sprintf('%.2f', Average::mean($values)),
-                        sprintf('%.2f', Average::median($values)),
-                        sprintf('%.2f', count($values) > 1 ? Descriptive::standardDeviation($values) : 0.0),
-                    ];
-                })->values()->all(),
-            );
+            $this->table(['Laravel major', 'n', 'mean', 'median', 'sd', 'IQR'], $tableRows);
 
             $points = array_values($observations
                 ->map(fn ($o): array => [(float) $o->major, (float) $o->{$metric}])
@@ -91,12 +116,26 @@ class ReportCommand extends Command
                     $fit['r2'],
                     $fit['n'],
                 ));
+                $regression['rows'][] = [
+                    $metric,
+                    sprintf('%.6f', $fit['slope']),
+                    sprintf('%.6f', $fit['intercept']),
+                    sprintf('%.6f', $fit['r2']),
+                    $fit['n'],
+                ];
             }
         }
+
+        $this->csvBlocks['descriptives'] = $descriptives;
+        $this->csvBlocks['regression'] = $regression;
     }
 
-    /** @param list<string> $metrics */
-    private function reportAiWindows(array $metrics): void
+    /**
+     * Block (c) — Mann-Whitney U + Cliff's delta per metric, pre vs post AI window.
+     *
+     * @param  list<string>  $metrics
+     */
+    private function reportAiComparison(array $metrics): void
     {
         $cutoff = $this->cutoff();
         $this->components->info("Instrument B — authored flow, pre/post-AI (cutoff {$cutoff->toDateString()})");
@@ -112,9 +151,10 @@ class ReportCommand extends Command
             fn (TestObservation $o): bool => $o->introduced_author_date->lessThan($cutoff),
         );
 
-        if ($pre->isEmpty() || $post->isEmpty()) {
+        if ($pre->count() < self::GROUP_FLOOR || $post->count() < self::GROUP_FLOOR) {
             $this->warn(sprintf(
-                'Insufficient data for a comparison at this cutoff (pre n=%d, post n=%d).',
+                'Refusing the pre/post comparison: group below the n=%d floor (pre n=%d, post n=%d).',
+                self::GROUP_FLOOR,
                 $pre->count(),
                 $post->count(),
             ));
@@ -122,7 +162,7 @@ class ReportCommand extends Command
             return;
         }
 
-        $rows = [];
+        $block = ['header' => ['metric', 'n_pre', 'n_post', 'median_pre', 'median_post', 'u', 'z', 'p', 'cliffs_delta', 'magnitude'], 'rows' => []];
         foreach ($metrics as $metric) {
             $preValues = array_values($pre->pluck($metric)->map(fn ($v) => (float) $v)->all());
             $postValues = array_values($post->pluck($metric)->map(fn ($v) => (float) $v)->all());
@@ -130,7 +170,7 @@ class ReportCommand extends Command
             $test = MannWhitney::test($preValues, $postValues);
             $delta = EffectSize::cliffsDelta($preValues, $postValues);
 
-            $rows[] = [
+            $block['rows'][] = [
                 $metric,
                 count($preValues),
                 count($postValues),
@@ -146,8 +186,73 @@ class ReportCommand extends Command
 
         $this->table(
             ['metric', 'n pre', 'n post', 'median pre', 'median post', 'U', 'z', 'p', "Cliff's δ", 'magnitude'],
-            $rows,
+            $block['rows'],
         );
+        $this->csvBlocks['ai_comparison'] = $block;
+    }
+
+    /**
+     * Block (d) — test-type distribution per version and per AI window, as percentages (H1).
+     */
+    private function reportTypeDistributions(): void
+    {
+        $this->components->info('Test-type distribution (%)');
+
+        $byVersion = DatasetQueries::versionBoundaryObservations()->groupBy('major')->sortKeys();
+        if ($byVersion->isNotEmpty()) {
+            $this->renderDistribution('types_by_version', 'framework_version', $byVersion->all());
+        }
+
+        $byWindow = DatasetQueries::onePerAuthoredMethod()
+            ->filter(fn (TestObservation $o): bool => $o->ai_window !== null)
+            ->groupBy('ai_window')
+            ->sortKeysDesc(); // pre before post
+        if ($byWindow->isNotEmpty()) {
+            $this->renderDistribution('types_by_window', 'ai_window', $byWindow->all());
+        }
+    }
+
+    /**
+     * @param  array<int|string, Collection<int, TestObservation>>  $groups
+     */
+    private function renderDistribution(string $blockName, string $keyLabel, array $groups): void
+    {
+        $types = ['unit', 'feature', 'integration', 'unknown'];
+        $block = ['header' => [$keyLabel, 'n', ...$types], 'rows' => []];
+
+        foreach ($groups as $key => $group) {
+            $byType = $group->countBy('test_type');
+            $n = $group->count();
+            $block['rows'][] = [
+                $key,
+                $n,
+                ...array_map(fn (string $t): string => sprintf('%.1f', ($byType[$t] ?? 0) / $n * 100), $types),
+            ];
+        }
+
+        $this->table($block['header'], $block['rows']);
+        $this->csvBlocks[$blockName] = $block;
+    }
+
+    private function exportCsv(string $base): void
+    {
+        $stem = preg_replace('/\.csv$/i', '', $base) ?? $base;
+
+        foreach ($this->csvBlocks as $name => $block) {
+            $path = "{$stem}_{$name}.csv";
+            $handle = fopen($path, 'w');
+            if ($handle === false) {
+                $this->warn("Could not open {$path} for writing — block '{$name}' not exported.");
+
+                continue;
+            }
+            fputcsv($handle, $block['header']);
+            foreach ($block['rows'] as $row) {
+                fputcsv($handle, $row);
+            }
+            fclose($handle);
+            $this->line("  exported: {$path}");
+        }
     }
 
     private function cutoff(): Carbon
