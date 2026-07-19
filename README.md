@@ -31,8 +31,8 @@ Discover the five commands with `php artisan list analyse`. Run them in order pe
 | 0 | `analyse:acquire owner/repo` | Full `git clone` into `storage/corpus/` (never `--depth 1`); records HEAD sha, clone date, license and GitHub creation date. |
 | 1 | `analyse:snapshot owner/repo` | Instrument A — mines `composer.json` history and stores one representative commit per integer Laravel major. |
 | 2–4 | `analyse:extract owner/repo [--head]` | Parses each snapshot's test suite (via `git show`, no checkouts) into the IR and writes one `test_observations` row per test method. |
-| B | `analyse:blame owner/repo [--cutoff=]` | Instrument B — attributes each test method to its introducing commit's author-date and buckets it pre/post the AI cutoff (2022-06-21, Copilot GA; configured in `config/analyser.php`). |
-| 6 | `analyse:report [--metric=] [--sensitivity]` | Descriptives + per-major trend (Instrument A) and the Mann-Whitney U / Cliff's delta pre/post-AI comparison (Instrument B). |
+| B | `analyse:blame owner/repo [--cutoff=]` | Instrument B — attributes each test method to its introducing commit's author-date (via `git log -L` on the definition line range) and buckets it pre/post the AI cutoff (default `2022-11-30`, overridable via `ANALYSER_AI_CUTOFF` or `--cutoff=` for sensitivity runs). |
+| 6 | `analyse:report [--metric=] [--cutoff=]` | Descriptives + per-major trend (Instrument A) and the Mann-Whitney U / Cliff's delta pre/post-AI comparison (Instrument B). |
 
 Mining stages only write to SQLite; `analyse:report` only reads from it. Every command is
 idempotent — re-running replaces rows rather than duplicating them. The corpus under

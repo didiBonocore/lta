@@ -67,7 +67,7 @@ it('reports the pre/post-AI comparison with hand-computed U and delta', function
     $this->artisan('analyse:report', ['--metric' => 'assertion_count']);
     $output = Artisan::output();
 
-    expect($output)->toContain('cutoff 2022-06-21')
+    expect($output)->toContain('cutoff 2022-11-30')
         ->toContain('0.5')
         ->toContain('-0.889')
         ->toContain('large')
@@ -75,12 +75,12 @@ it('reports the pre/post-AI comparison with hand-computed U and delta', function
         ->toContain('4.00');
 });
 
-it('re-buckets against the sensitivity cutoff without re-blaming', function () {
+it('re-buckets against an overridden cutoff without re-blaming', function () {
     $this->withoutMockingConsoleOutput();
-    $this->artisan('analyse:report', ['--metric' => 'assertion_count', '--sensitivity' => true]);
+    $this->artisan('analyse:report', ['--metric' => 'assertion_count', '--cutoff' => '2022-06-21']);
     $output = Artisan::output();
 
-    expect($output)->toContain('cutoff 2022-11-30')
+    expect($output)->toContain('cutoff 2022-06-21')
         ->toContain('-0.889'); // same split under both anchors in this dataset
 });
 

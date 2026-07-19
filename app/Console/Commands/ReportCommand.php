@@ -27,8 +27,7 @@ class ReportCommand extends Command
 {
     protected $signature = 'analyse:report
         {--metric= : restrict to one metric}
-        {--cutoff= : explicit AI-cutoff override (YYYY-MM-DD)}
-        {--sensitivity : use the ai_cutoff_sensitivity date (ChatGPT launch) instead of the primary cutoff}';
+        {--cutoff= : override the configured ai_cutoff (sensitivity runs)}';
 
     protected $description = 'Produce descriptive trends, version regression, and pre/post-AI comparison';
 
@@ -158,9 +157,7 @@ class ReportCommand extends Command
             return Carbon::parse($explicit);
         }
 
-        return Carbon::parse((string) config(
-            $this->option('sensitivity') ? 'analyser.ai_cutoff_sensitivity' : 'analyser.ai_cutoff',
-        ));
+        return Carbon::parse((string) config('analyser.ai_cutoff'));
     }
 
     /** @return list<string> */
