@@ -1,14 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
-
-// Read-only results dashboard over the emitted dataset (M5) — no write flows.
-Route::view('results', 'results')->name('results');
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
-});
-
-require __DIR__.'/settings.php';
+// CLI-only application — this single route exists so serving the app doesn't 404.
+Route::get('/', fn () => response(
+    sprintf("%s %s — CLI-only. Run `php artisan list analyse`.\n", config('app.name'), app()->version()),
+    200,
+    ['Content-Type' => 'text/plain'],
+))->name('home');

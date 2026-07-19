@@ -1,22 +1,20 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/livewire-starter-kit",
+    "name": "didibonocore/laravel-test-pattern-analyzer",
     "type": "project",
-    "description": "The official Laravel starter kit for Livewire.",
+    "description": "CLI static-analysis tool mining test patterns across Laravel majors and the pre/post-AI boundary (MSc dissertation artefact).",
     "keywords": [
         "laravel",
-        "framework"
+        "static-analysis",
+        "testing",
+        "mining-software-repositories"
     ],
     "license": "MIT",
     "require": {
         "php": "^8.3",
         "laravel/chisel": "^0.1.0",
-        "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
-        "livewire/blaze": "^1.0",
-        "livewire/flux": "^2.13.1",
-        "livewire/livewire": "^4.1",
         "markrogoyski/math-php": "^2.13",
         "nikic/php-parser": "^5.8"
     },
@@ -50,13 +48,7 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "npm install",
-            "npm run build"
-        ],
-        "dev": [
-            "Composer\\Config::disableProcessTimeout",
-            "@php artisan dev"
+            "@php artisan migrate --force"
         ],
         "lint": [
             "pint --parallel"
