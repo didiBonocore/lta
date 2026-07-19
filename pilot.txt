@@ -1,0 +1,4 @@
+# Pilot corpus — one owner/repo per line; blank lines and #-comments are ignored.
+# One PHPUnit application, one Pest application (roadmap M1 pilot pair).
+grokability/snipe-it
+InvoiceShelf/InvoiceShelf
