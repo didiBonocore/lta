@@ -8,9 +8,10 @@ use App\Models\TestObservation;
 use Tests\Support\GitFixtureRepo;
 
 /**
- * Builds a real (local, throwaway) git history: two commits on Laravel 9, a bump to 10,
- * then one more commit. Instrument A must pick the parent of the bump commit as Laravel 9's
- * representative (the mature 9 state) and HEAD for the still-current major 10.
+ * Builds a real (local, throwaway) git history: a Laravel 9 boot commit, a test-only commit
+ * (does not touch composer.json), a bump to 10, then another test-only commit. The
+ * representative per major is the LAST composer.json-touching commit still resolving to that
+ * major: commit 1 for Laravel 9, the bump commit for Laravel 10 — never HEAD.
  */
 beforeEach(function () {
     $this->repo = GitFixtureRepo::init(base_path('storage/framework/testing/snapshot-repo'));
@@ -42,19 +43,19 @@ afterEach(function () {
     $this->repo->destroy();
 });
 
-it('snapshots each integer major at its mature pre-bump state, and HEAD for the current major', function () {
+it('snapshots each integer major at its last constraint commit for that major', function () {
     $this->artisan('analyse:snapshot', ['full_name' => 'acme/history'])->assertSuccessful();
 
     expect(Snapshot::count())->toBe(2);
 
     $nine = Snapshot::where('framework_version', 9)->sole();
-    expect($nine->commit_sha)->toBe($this->matureNine)
+    expect($nine->commit_sha)->toBe($this->commitOnNine)
         ->and($nine->kind)->toBe('version_boundary')
-        ->and($nine->commit_date->toDateString())->toBe('2022-09-01');
+        ->and($nine->commit_date->toDateString())->toBe('2022-01-10');
 
     $ten = Snapshot::where('framework_version', 10)->sole();
-    expect($ten->commit_sha)->toBe($this->headSha)
-        ->and($ten->commit_date->toDateString())->toBe('2023-06-15');
+    expect($ten->commit_sha)->toBe($this->bumpToTen)
+        ->and($ten->commit_date->toDateString())->toBe('2023-02-20');
 });
 
 it('is idempotent: re-snapshotting updates rather than duplicates', function () {
@@ -71,11 +72,14 @@ it('extracts every version-boundary snapshot through git show without touching t
     $nine = Snapshot::where('framework_version', 9)->sole();
     $ten = Snapshot::where('framework_version', 10)->sole();
 
-    expect($nine->observations()->pluck('file_path')->sort()->values()->all())->toBe([
+    // Laravel 9's representative is the boot commit (only Alpha existed); the bump commit's
+    // tree carries Alpha + Beta; Gamma (added after the bump) is in no snapshot.
+    expect($nine->observations()->pluck('file_path')->all())->toBe([
+        'tests/Unit/AlphaTest.php',
+    ])->and($ten->observations()->pluck('file_path')->sort()->values()->all())->toBe([
         'tests/Unit/AlphaTest.php',
         'tests/Unit/BetaTest.php',
-    ])->and($ten->observations()->count())->toBe(3)
-        ->and(TestObservation::count())->toBe(5);
+    ])->and(TestObservation::count())->toBe(3);
 
     // The clone's checkout was never moved off HEAD:
     expect($this->repo->head())->toBe($this->headSha);

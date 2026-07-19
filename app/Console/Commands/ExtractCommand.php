@@ -21,6 +21,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use PhpParser\Error as ParseError;
 
+use function Laravel\Prompts\progress;
+
 /**
  * Stages 2-4 — discover the suite, route each test file to the owning FrontEnd by content,
  * and flatten the resulting IR into TestObservation rows. --head reads the working tree at
@@ -55,8 +57,11 @@ class ExtractCommand extends Command
                 ['commit_sha' => (string) $repository->head_sha, 'framework_version' => null],
             );
 
-            $observationsPerFrontEnd = $this->extractSnapshot($discovery, $repository, $snapshot, new WorkingTree($root));
-            $repository->update(['primary_test_framework' => $this->primaryFramework($observationsPerFrontEnd)]);
+            $summary = $this->extractSnapshot($discovery, $repository, $snapshot, new WorkingTree($root));
+            $repository->update(['primary_test_framework' => $this->primaryFramework($summary['perFrontEnd'])]);
+
+            $this->reportSnapshot($snapshot, $summary);
+            $this->summariseByFrontEndAndType($summary['rows']);
 
             return self::SUCCESS;
         }
@@ -72,10 +77,24 @@ class ExtractCommand extends Command
             return self::FAILURE;
         }
 
-        foreach ($snapshots as $snapshot) {
-            $this->line("Snapshot: Laravel {$snapshot->framework_version}");
-            $this->extractSnapshot($discovery, $repository, $snapshot, new GitTree($root, $snapshot->commit_sha));
-        }
+        $perVersion = [];
+        progress(
+            label: "Extracting {$snapshots->count()} version-boundary snapshots",
+            steps: $snapshots,
+            callback: function (Snapshot $snapshot, $progress) use ($discovery, $repository, $root, &$perVersion): void {
+                $progress->hint("Laravel {$snapshot->framework_version} @ ".substr($snapshot->commit_sha, 0, 12));
+                $summary = $this->extractSnapshot($discovery, $repository, $snapshot, new GitTree($root, $snapshot->commit_sha));
+                $perVersion[] = [
+                    $snapshot->framework_version,
+                    $summary['files'],
+                    count($summary['rows']),
+                    $summary['unroutable'],
+                    $summary['parseFailures'],
+                ];
+            },
+        );
+
+        $this->table(['Laravel major', 'files', 'observations', 'unroutable', 'parse failures'], $perVersion);
 
         return self::SUCCESS;
     }
@@ -83,7 +102,7 @@ class ExtractCommand extends Command
     /**
      * Replace one snapshot's observations with a fresh extraction of its tree.
      *
-     * @return array<string,int> observation count per front-end
+     * @return array{rows: list<array<string, mixed>>, files: int, unroutable: int, parseFailures: int, perFrontEnd: array<string, int>}
      */
     private function extractSnapshot(
         SuiteDiscovery $discovery,
@@ -160,17 +179,28 @@ class ExtractCommand extends Command
             TestObservation::insert($chunk);
         }
 
+        return [
+            'rows' => $rows,
+            'files' => count($files),
+            'unroutable' => $unroutable,
+            'parseFailures' => $parseFailures,
+            'perFrontEnd' => $observationsPerFrontEnd,
+        ];
+    }
+
+    /**
+     * @param  array{rows: list<array<string, mixed>>, files: int, unroutable: int, parseFailures: int, perFrontEnd: array<string, int>}  $summary
+     */
+    private function reportSnapshot(Snapshot $snapshot, array $summary): void
+    {
         $this->info(sprintf(
             'Extracted %d observations from %d files (%d unroutable, %d parse failures) @ %s.',
-            count($rows),
-            count($files),
-            $unroutable,
-            $parseFailures,
+            count($summary['rows']),
+            $summary['files'],
+            $summary['unroutable'],
+            $summary['parseFailures'],
             $snapshot->commit_sha,
         ));
-        $this->summariseByFrontEndAndType($rows);
-
-        return $observationsPerFrontEnd;
     }
 
     /**
