@@ -6,13 +6,16 @@ use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 
 /**
- * Seeds a hand-computed dataset:
- *   Laravel 9 snapshot: assertion counts [1,2,3] (authored pre-AI, 2021)
- *   Laravel 10 snapshot: assertion counts [3,4,5] (authored post-AI, 2023)
- * Known answers — per-major means 2.00 / 4.00; trend slope 2.000, r² 0.600;
- * Mann-Whitney U = 0.5; Cliff's delta = -8/9 = -0.889 (large).
+ * Seeds a hand-computed dataset (n = 5 per group, above the statistical floor):
+ *   Laravel 9: assertion counts [1,1,2,2,3], 3 unit + 2 feature, authored pre-AI (2021)
+ *   Laravel 10: assertion counts [3,3,4,4,5], all feature, authored post-AI (2023)
+ * Known answers — means 1.80/3.80, medians 2.00/4.00, sd 0.84, IQR 1.50 (MathPHP
+ * exclusive quartiles); OLS slope 2.000, intercept -16.200, r² 0.641 (SSres 5.6 /
+ * SStot 15.6); Mann-Whitney U = 1.0 (R1 = 16); Cliff's delta = -23/25 = -0.920 (large);
+ * type split 60/40 vs 0/100.
  */
 beforeEach(function () {
     $repository = Repository::create([
@@ -22,75 +25,121 @@ beforeEach(function () {
         'url' => 'https://github.com/acme/hand.git',
     ]);
 
-    $nine = Snapshot::create([
-        'repository_id' => $repository->id,
-        'commit_sha' => 'aaa',
-        'framework_version' => 9,
-        'kind' => 'version_boundary',
-    ]);
-    $ten = Snapshot::create([
-        'repository_id' => $repository->id,
-        'commit_sha' => 'bbb',
-        'framework_version' => 10,
-        'kind' => 'version_boundary',
-    ]);
-
-    $seed = function (Snapshot $snapshot, array $assertionCounts, string $authoredAt) use ($repository): void {
-        foreach ($assertionCounts as $i => $count) {
+    $seed = [
+        [9, 'aaa', [1, 1, 2, 2, 3], ['unit', 'unit', 'unit', 'feature', 'feature'], '2021-03-01'],
+        [10, 'bbb', [3, 3, 4, 4, 5], ['feature', 'feature', 'feature', 'feature', 'feature'], '2023-03-01'],
+    ];
+    foreach ($seed as [$major, $sha, $counts, $types, $authoredAt]) {
+        $snapshot = Snapshot::create([
+            'repository_id' => $repository->id,
+            'commit_sha' => $sha,
+            'framework_version' => $major,
+            'kind' => 'version_boundary',
+        ]);
+        foreach ($counts as $i => $count) {
             TestObservation::create([
                 'snapshot_id' => $snapshot->id,
                 'repository_id' => $repository->id,
                 'file_path' => 'tests/ExampleTest.php',
-                'identifier' => "test_{$snapshot->framework_version}_{$i}",
+                'identifier' => "test_{$major}_{$i}",
                 'front_end' => 'phpunit',
-                'test_type' => 'unit',
+                'test_type' => $types[$i],
                 'assertion_count' => $count,
                 'introduced_commit_sha' => 'ccc',
                 'introduced_author_date' => $authoredAt,
-                'ai_window' => $authoredAt < '2022-06-21' ? 'pre' : 'post',
+                'ai_window' => $authoredAt < '2022-11-30' ? 'pre' : 'post',
             ]);
         }
-    };
-    $seed($nine, [1, 2, 3], '2021-03-01');
-    $seed($ten, [3, 4, 5], '2023-03-01');
+    }
 });
 
-it('reports per-major descriptives with the least-squares trend on framework major', function () {
-    $this->artisan('analyse:report', ['--metric' => 'assertion_count'])
-        ->expectsOutputToContain('assertion_count = 2.000 × major -16.000   (r² = 0.600, n = 6)')
-        ->assertSuccessful();
+function reportOutput(array $options = []): string
+{
+    test()->withoutMockingConsoleOutput();
+    test()->artisan('analyse:report', $options + ['--metric' => 'assertion_count']);
+
+    return Artisan::output();
+}
+
+it('prints per-major descriptives with IQR and the least-squares trend', function () {
+    $output = reportOutput();
+
+    expect($output)
+        ->toContain('1.80')  // mean v9
+        ->toContain('3.80')  // mean v10
+        ->toContain('0.84')  // sample sd
+        ->toContain('1.50')  // IQR
+        ->toContain('assertion_count = 2.000 × major -16.200   (r² = 0.641, n = 10)');
 });
 
-it('reports the pre/post-AI comparison with hand-computed U and delta', function () {
-    // Table cells: n=3/3, medians 2.00/4.00, U=0.5, delta=-0.889 large.
-    $this->withoutMockingConsoleOutput();
-    $this->artisan('analyse:report', ['--metric' => 'assertion_count']);
-    $output = Artisan::output();
+it('prints the pre/post-AI comparison with hand-computed U and delta', function () {
+    $output = reportOutput();
 
     expect($output)->toContain('cutoff 2022-11-30')
-        ->toContain('0.5')
-        ->toContain('-0.889')
+        ->toContain('1.0')      // U
+        ->toContain('-0.920')   // Cliff's delta
         ->toContain('large')
-        ->toContain('2.00')
-        ->toContain('4.00');
+        ->toContain('2.00')     // median pre
+        ->toContain('4.00');    // median post
+});
+
+it('prints test-type distributions per version and per AI window as percentages', function () {
+    $output = reportOutput();
+
+    expect($output)->toContain('Test-type distribution')
+        ->toContain('60.0')     // v9 / pre window: unit share
+        ->toContain('40.0')     // v9 / pre window: feature share
+        ->toContain('100.0');   // v10 / post window: feature share
 });
 
 it('re-buckets against an overridden cutoff without re-blaming', function () {
-    $this->withoutMockingConsoleOutput();
-    $this->artisan('analyse:report', ['--metric' => 'assertion_count', '--cutoff' => '2022-06-21']);
-    $output = Artisan::output();
+    $output = reportOutput(['--cutoff' => '2022-06-21']);
 
     expect($output)->toContain('cutoff 2022-06-21')
-        ->toContain('-0.889'); // same split under both anchors in this dataset
+        ->toContain('-0.920'); // same split under both anchors in this dataset
 });
 
-it('declines the comparison when a cutoff empties one group', function () {
-    $this->withoutMockingConsoleOutput();
-    $this->artisan('analyse:report', ['--metric' => 'assertion_count', '--cutoff' => '2031-01-01']);
-    $output = Artisan::output();
+it('refuses the comparison with a warning when a group is under the n=5 floor', function () {
+    $output = reportOutput(['--cutoff' => '2031-01-01']);
 
-    expect($output)->toContain('Insufficient data')
-        ->toContain('pre n=6, post n=0');
+    expect($output)->toContain('Refusing the pre/post comparison')
+        ->toContain('n=5 floor (pre n=10, post n=0)')
+        // Descriptives and distributions still print — only the tests refuse.
+        ->toContain('assertion_count = 2.000 × major');
+});
+
+it('exports every block as a cleanly parseable CSV', function () {
+    $base = base_path('storage/framework/testing/report.csv');
+    File::ensureDirectoryExists(dirname($base));
+
+    reportOutput(['--export' => $base]);
+
+    $stem = base_path('storage/framework/testing/report');
+    $blocks = ['descriptives', 'regression', 'ai_comparison', 'types_by_version', 'types_by_window'];
+
+    foreach ($blocks as $block) {
+        expect(file_exists("{$stem}_{$block}.csv"))->toBeTrue("missing {$block} export");
+
+        $lines = array_values(array_filter(explode("\n", (string) file_get_contents("{$stem}_{$block}.csv"))));
+        $width = count(str_getcsv($lines[0]));
+        expect(count($lines))->toBeGreaterThan(1);
+        foreach ($lines as $line) {
+            expect(count(str_getcsv($line)))->toBe($width); // every row parses to the header width
+        }
+    }
+
+    $regression = str_getcsv(explode("\n", (string) file_get_contents("{$stem}_regression.csv"))[1]);
+    expect($regression[0])->toBe('assertion_count')
+        ->and((float) $regression[1])->toEqualWithDelta(2.0, 1e-6)
+        ->and((float) $regression[3])->toEqualWithDelta(0.641, 1e-3);
+
+    $comparison = str_getcsv(explode("\n", (string) file_get_contents("{$stem}_ai_comparison.csv"))[1]);
+    expect($comparison[5])->toBe('1.0')      // U
+        ->and($comparison[8])->toBe('-0.920'); // Cliff's delta
+
+    foreach ($blocks as $block) {
+        File::delete("{$stem}_{$block}.csv");
+    }
 });
 
 it('rejects an unknown metric', function () {
