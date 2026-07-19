@@ -33,6 +33,10 @@ final class TestMethodRecord
         // Instrument B — backfilled by the blame pass, null at extraction time:
         public ?string $introducedCommitSha = null,
         public ?string $introducedAuthorDate = null, // ISO-8601
+        // 1-based line range of the definition in its file (drives the blame pass's
+        // `git log -L`); 0 when the parser could not attribute positions.
+        public int $startLine = 0,
+        public int $endLine = 0,
     ) {}
 
     public function mockBreadth(): int

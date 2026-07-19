@@ -34,6 +34,10 @@ return new class extends Migration
 
             $table->unsignedInteger('size_statements')->default(0);
             $table->unsignedInteger('size_loc')->default(0);
+            // 1-based definition line range at the snapshot's sha — drives the blame pass's
+            // `git log -L`. Null when the parser could not attribute positions.
+            $table->unsignedInteger('start_line')->nullable();
+            $table->unsignedInteger('end_line')->nullable();
             $table->boolean('uses_refresh_database')->default(false);
             $table->json('setup_signals')->nullable();
 

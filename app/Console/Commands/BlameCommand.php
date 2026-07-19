@@ -5,24 +5,38 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Repository;
+use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Process;
+
+use function Laravel\Prompts\progress;
 
 /**
  * Instrument B — attribute each test method to its introducing commit's author-date and
  * bucket pre/post-AI. This isolates tests *authored in* each era (flow), unlike a snapshot
- * which is contaminated by old sticky tests (state). The cutoff is commit-author-date based
- * and comes from config('analyser.ai_cutoff') — never framework-version based, because
- * Laravel 13 is AI-native and a version cutoff would conflate the two instruments.
+ * which is contaminated by old sticky tests (state).
+ *
+ * Scope: blame runs once per repository against the NEWEST extracted snapshot (head if
+ * extracted, else the highest extracted major) — introduction dates are properties of
+ * methods, not of versions. The cutoff is commit-author-date based, never framework-version
+ * based; default from config('analyser.ai_cutoff'), `--cutoff=` overrides for sensitivity
+ * runs. Attribution prefers `git log -L <start>,<end>:<path> --reverse` (first commit =
+ * introduction), falling back to `git blame -M -C` on the signature line. Deliberately
+ * serial: blame is the slow stage, and serial keeps every failure attributable.
  */
 class BlameCommand extends Command
 {
     protected $signature = 'analyse:blame {full_name : owner/repo} {--cutoff= : override the configured ai_cutoff (sensitivity runs)}';
 
     protected $description = 'Attribute each test method to its author-date and tag the AI window';
+
+    /** @var array<string, int> memoised commit-count per file path (at the blamed sha) */
+    private array $fileCommitCounts = [];
+
+    /** @var array<string, array{0: string, 1: string}|null> memoised sole-commit per file path */
+    private array $soleFileCommits = [];
 
     public function handle(): int
     {
@@ -40,109 +54,175 @@ class BlameCommand extends Command
             return self::FAILURE;
         }
 
-        $cutoff = Carbon::parse((string) ($this->option('cutoff') ?: config('analyser.ai_cutoff')));
+        $snapshot = $this->newestExtractedSnapshot($repository);
+        if ($snapshot === null) {
+            $this->error('No extracted snapshot — run analyse:extract first.');
 
-        // One attribution per distinct test method; the same method observed in several
-        // snapshots shares one introducing commit.
-        $groups = TestObservation::where('repository_id', $repository->id)
-            ->get(['id', 'file_path', 'identifier', 'front_end'])
-            ->groupBy(fn (TestObservation $o): string => "{$o->front_end}|{$o->file_path}|{$o->identifier}");
-
-        $attributed = 0;
-        $unattributed = 0;
-        $windows = ['pre' => 0, 'post' => 0];
-
-        foreach ($groups as $observations) {
-            /** @var Collection<int, TestObservation> $observations */
-            $first = $observations->first();
-            $introduction = $this->introducingCommit($root, $first);
-
-            if ($introduction === null) {
-                $unattributed++;
-
-                continue;
-            }
-
-            [$sha, $authorDate] = $introduction;
-            $window = Carbon::parse($authorDate)->lessThan($cutoff) ? 'pre' : 'post';
-
-            TestObservation::whereIn('id', $observations->pluck('id'))->update([
-                'introduced_commit_sha' => $sha,
-                'introduced_author_date' => Carbon::parse($authorDate),
-                'ai_window' => $window,
-            ]);
-
-            $attributed++;
-            $windows[$window]++;
+            return self::FAILURE;
         }
 
+        $cutoff = Carbon::parse((string) ($this->option('cutoff') ?: config('analyser.ai_cutoff')));
+
+        // Idempotency: a re-run replaces the whole Instrument B layer for this repository.
+        TestObservation::where('repository_id', $repository->id)->update([
+            'introduced_commit_sha' => null,
+            'introduced_author_date' => null,
+            'ai_window' => null,
+        ]);
+
+        $observations = $snapshot->observations()->get();
+        $attributed = 0;
+        $failed = 0;
+        $windows = ['pre' => 0, 'post' => 0];
+
+        progress(
+            label: "Blaming {$observations->count()} test methods @ ".substr((string) $snapshot->commit_sha, 0, 12),
+            steps: $observations,
+            callback: function (TestObservation $observation, $progress) use ($root, $snapshot, $cutoff, &$attributed, &$failed, &$windows): void {
+                $progress->hint($observation->file_path);
+
+                $introduction = $this->introducingCommit($root, (string) $snapshot->commit_sha, $observation);
+                if ($introduction === null) {
+                    $failed++; // Instrument B columns stay null — same philosophy as parse failures.
+
+                    return;
+                }
+
+                [$sha, $authorDate] = $introduction;
+                $window = Carbon::parse($authorDate)->lessThan($cutoff) ? 'pre' : 'post';
+
+                $observation->update([
+                    'introduced_commit_sha' => $sha,
+                    'introduced_author_date' => Carbon::parse($authorDate),
+                    'ai_window' => $window,
+                ]);
+
+                $attributed++;
+                $windows[$window]++;
+            },
+        );
+
         $this->info(sprintf(
-            'Attributed %d of %d test methods (cutoff %s): %d pre-AI, %d post-AI. %d unattributable.',
+            'Attributed %d of %d test methods (cutoff %s): %d pre-AI, %d post-AI. %d unattributable (columns left null).',
             $attributed,
-            $groups->count(),
+            $observations->count(),
             $cutoff->toDateString(),
             $windows['pre'],
             $windows['post'],
-            $unattributed,
+            $failed,
         ));
 
         return self::SUCCESS;
     }
 
     /**
-     * The oldest commit whose diff introduced this test: pickaxe on the definition marker
-     * scoped to the file's history, falling back to the commit that added the file.
-     *
-     * @return array{0: string, 1: string}|null [sha, ISO-8601 author date]
+     * Head if extracted, else the highest extracted major.
      */
-    private function introducingCommit(string $root, TestObservation $observation): ?array
+    private function newestExtractedSnapshot(Repository $repository): ?Snapshot
     {
-        $needle = $observation->front_end === 'phpunit'
-            ? "function {$observation->identifier}"
-            : $observation->identifier;
-
-        $picked = $this->firstLogLine($root, [
-            'git', 'log', '--reverse', '--format=%H|%aI', '-S', $needle, '--', $observation->file_path,
-        ]);
-        if ($picked !== null) {
-            return $picked;
-        }
-
-        // Renames defeat the path-scoped pickaxe; the file's add-commit is the honest bound.
-        $added = Process::path($root)->run([
-            'git', 'log', '--follow', '--diff-filter=A', '--format=%H|%aI', '--', $observation->file_path,
-        ]);
-        if (! $added->successful()) {
-            return null;
-        }
-
-        $lines = array_values(array_filter(explode("\n", trim($added->output()))));
-        $oldest = end($lines);
-
-        return $oldest === false ? null : $this->splitLogLine($oldest);
+        return $repository->snapshots()
+            ->has('observations')
+            ->orderByRaw("kind = 'head' desc")
+            ->orderByDesc('framework_version')
+            ->first();
     }
 
     /**
-     * @param  list<string>  $command
-     * @return array{0: string, 1: string}|null
+     * The commit that introduced this method's definition line range.
+     *
+     * @return array{0: string, 1: string}|null [sha, ISO-8601 author date]
      */
-    private function firstLogLine(string $root, array $command): ?array
+    private function introducingCommit(string $root, string $sha, TestObservation $observation): ?array
     {
-        $result = Process::path($root)->run($command);
-        if (! $result->successful()) {
+        $path = $observation->file_path;
+        $start = (int) $observation->start_line;
+        $end = (int) $observation->end_line;
+
+        if ($start < 1 || $end < $start) {
             return null;
         }
 
-        $first = strtok(trim($result->output()), "\n");
+        // Memoisation: when only one commit ever touched the file, every method in it shares
+        // that introducing commit — one invocation covers the whole file.
+        if ($this->commitCountFor($root, $sha, $path) === 1) {
+            return $this->soleFileCommits[$path] ??= $this->soleCommitFor($root, $sha, $path);
+        }
 
-        return $first === false ? null : $this->splitLogLine($first);
+        $traced = Process::path($root)->run([
+            'git', 'log', '--reverse', '-s', '--format=%H %aI', "-L{$start},{$end}:{$path}", $sha,
+        ]);
+        if ($traced->successful()) {
+            $first = $this->firstShaDateLine($traced->output());
+            if ($first !== null) {
+                return $first;
+            }
+        }
+
+        return $this->blameSignatureLine($root, $sha, $path, $start);
+    }
+
+    private function commitCountFor(string $root, string $sha, string $path): int
+    {
+        return $this->fileCommitCounts[$path] ??= substr_count(trim(Process::path($root)
+            ->run(['git', 'log', '--follow', '--format=%H', $sha, '--', $path])
+            ->output()), "\n") + 1;
     }
 
     /** @return array{0: string, 1: string}|null */
-    private function splitLogLine(string $line): ?array
+    private function soleCommitFor(string $root, string $sha, string $path): ?array
     {
-        $parts = explode('|', trim($line), 2);
+        $output = Process::path($root)
+            ->run(['git', 'log', '--follow', '--format=%H %aI', $sha, '--', $path])
+            ->output();
 
-        return count($parts) === 2 ? [$parts[0], $parts[1]] : null;
+        return $this->firstShaDateLine($output);
+    }
+
+    /**
+     * Fallback for paths `git log -L` cannot trace: blame the signature line, honouring
+     * moves/copies (-M -C).
+     *
+     * @return array{0: string, 1: string}|null
+     */
+    private function blameSignatureLine(string $root, string $sha, string $path, int $line): ?array
+    {
+        $blamed = Process::path($root)->run([
+            'git', 'blame', '-M', '-C', '-L', "{$line},{$line}", '--porcelain', $sha, '--', $path,
+        ]);
+        if (! $blamed->successful()) {
+            return null;
+        }
+
+        $lines = explode("\n", $blamed->output());
+        $commitSha = explode(' ', $lines[0])[0];
+        if (preg_match('/^[0-9a-f]{40}$/', $commitSha) !== 1) {
+            return null;
+        }
+
+        $epoch = null;
+        foreach ($lines as $header) {
+            if (str_starts_with($header, 'author-time ')) {
+                $epoch = (int) substr($header, strlen('author-time '));
+
+                break;
+            }
+        }
+        if ($epoch === null) {
+            return null;
+        }
+
+        return [$commitSha, Carbon::createFromTimestampUTC($epoch)->toIso8601String()];
+    }
+
+    /** @return array{0: string, 1: string}|null */
+    private function firstShaDateLine(string $output): ?array
+    {
+        foreach (explode("\n", trim($output)) as $line) {
+            if (preg_match('/^([0-9a-f]{40}) (\S+)$/', trim($line), $matches) === 1) {
+                return [$matches[1], $matches[2]];
+            }
+        }
+
+        return null;
     }
 }

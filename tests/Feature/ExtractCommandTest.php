@@ -63,7 +63,9 @@ it('extracts HEAD into a head snapshot with one observation per test method', fu
         ->and($login->assertion_count)->toBe(2)
         ->and($login->mock_breadth)->toBe(0)
         ->and($login->uses_refresh_database)->toBeTrue()
-        ->and($login->size_statements)->toBe(3);
+        ->and($login->size_statements)->toBe(3)
+        ->and($login->start_line)->toBe(21)   // definition range in the fixture file,
+        ->and($login->end_line)->toBe(31);    // recorded for the blame pass's git log -L
 
     $gateway = TestObservation::where('front_end', 'pest')->sole();
     expect($gateway->file_path)->toBe('tests/Unit/GatewayTest.php')

@@ -167,6 +167,8 @@ class ExtractCommand extends Command
                     'mock_kinds' => json_encode($method->mockKinds()),
                     'size_statements' => $method->sizeStatements,
                     'size_loc' => $method->sizeLoc,
+                    'start_line' => $method->startLine > 0 ? $method->startLine : null,
+                    'end_line' => $method->endLine > 0 ? $method->endLine : null,
                     'uses_refresh_database' => $method->usesRefreshDatabase,
                     'setup_signals' => json_encode($method->setupSignals),
                     'created_at' => now(),

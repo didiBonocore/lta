@@ -60,6 +60,8 @@ abstract class AbstractFrontEnd implements FrontEnd
             mocks: $mocks,
             sizeStatements: count($statements),
             sizeLoc: max(1, ($ownerNode->getEndLine() - $ownerNode->getStartLine()) + 1),
+            startLine: max(0, $ownerNode->getStartLine()),
+            endLine: max(0, $ownerNode->getEndLine()),
             usesRefreshDatabase: in_array('RefreshDatabase', $traits, true),
             hasHttpCall: $type->value === 'feature',
             hasDbInteraction: in_array($type->value, ['feature', 'integration'], true),
