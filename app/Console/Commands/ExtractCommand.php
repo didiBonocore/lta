@@ -8,14 +8,17 @@ use App\Analysis\Discovery\SuiteDiscovery;
 use App\Analysis\FrontEnd\FrontEnd;
 use App\Analysis\FrontEnd\PestFrontEnd;
 use App\Analysis\FrontEnd\PhpUnitFrontEnd;
+use App\Analysis\Ir\Enums\TestType;
 use App\Analysis\Ir\TestFileRecord;
 use App\Analysis\Tree\GitTree;
 use App\Analysis\Tree\SourceTree;
 use App\Analysis\Tree\WorkingTree;
+use App\Models\ParseFailure;
 use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use PhpParser\Error as ParseError;
 
 /**
@@ -89,9 +92,12 @@ class ExtractCommand extends Command
         SourceTree $tree,
     ): array {
         $snapshot->observations()->delete();
+        $snapshot->parseFailures()->delete();
 
         $files = $discovery->discover($tree);
-        $frontEnds = [new PhpUnitFrontEnd, new PestFrontEnd];
+        // Pest before PHPUnit: Pest files are plain PHP with no class to anchor on, so the
+        // more specific closure-shape check must get first refusal.
+        $frontEnds = [new PestFrontEnd, new PhpUnitFrontEnd];
 
         $rows = [];
         $observationsPerFrontEnd = [];
@@ -108,6 +114,13 @@ class ExtractCommand extends Command
                 $record = $this->routeAndParse($frontEnds, $relativePath, $source);
             } catch (ParseError $e) {
                 $parseFailures++;
+                ParseFailure::create([
+                    'repository_id' => $repository->id,
+                    'snapshot_id' => $snapshot->id,
+                    'file_path' => $relativePath,
+                    'commit_sha' => (string) $snapshot->commit_sha,
+                    'message' => str($e->getMessage())->limit(250)->toString(),
+                ]);
                 $this->warn("Parse failure in {$relativePath}: {$e->getMessage()}");
 
                 continue;
@@ -155,12 +168,33 @@ class ExtractCommand extends Command
             $parseFailures,
             $snapshot->commit_sha,
         ));
-        $this->table(
-            ['test type', 'observations'],
-            collect($rows)->countBy('test_type')->sortKeys()->map(fn ($n, $type) => [$type, $n])->values()->all(),
-        );
+        $this->summariseByFrontEndAndType($rows);
 
         return $observationsPerFrontEnd;
+    }
+
+    /**
+     * front_end × test_type cross-tab of the rows just written.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function summariseByFrontEndAndType(array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+
+        $types = array_map(fn (TestType $t): string => $t->value, TestType::cases());
+        $matrix = collect($rows)->groupBy('front_end')->sortKeys();
+
+        $this->table(
+            ['front_end', ...$types, 'total'],
+            $matrix->map(function (Collection $group, string $frontEnd) use ($types): array {
+                $byType = $group->countBy('test_type');
+
+                return [$frontEnd, ...array_map(fn (string $t) => $byType[$t] ?? 0, $types), $group->count()];
+            })->values()->all(),
+        );
     }
 
     /** @param list<FrontEnd> $frontEnds */
