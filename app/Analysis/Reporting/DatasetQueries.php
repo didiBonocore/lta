@@ -8,7 +8,7 @@ use App\Models\TestObservation;
 use Illuminate\Support\Collection;
 
 /**
- * The two sampling rules every consumer of the dataset (analyse:report, the dashboard)
+ * The two sampling rules every consumer of the dataset
  * must share, so a chart can never silently disagree with the paper's tables.
  */
 final class DatasetQueries
