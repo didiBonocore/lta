@@ -7,6 +7,7 @@ use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 
 /**
  * Seeds a hand-computed dataset (n = 5 per group, above the statistical floor):
@@ -92,6 +93,16 @@ it('prints test-type distributions per version and per AI window as percentages'
         ->toContain('100.0');   // v10 / post window: feature share
 });
 
+it('heads the report with the git-resolved tool version and cutoff', function () {
+    Process::preventStrayProcesses();
+    Process::fake(['*describe*' => Process::result("v0.1.0-2-gabc1234\n")]);
+
+    $output = reportOutput();
+
+    expect($output)->toContain('lta v0.1.0-2-gabc1234')
+        ->toContain('cutoff 2022-11-30');
+});
+
 it('re-buckets against an overridden cutoff without re-blaming', function () {
     $output = reportOutput(['--cutoff' => '2022-06-21']);
 
@@ -109,13 +120,16 @@ it('refuses the comparison with a warning when a group is under the n=5 floor', 
 });
 
 it('exports every block as a cleanly parseable CSV', function () {
+    Process::preventStrayProcesses();
+    Process::fake(['*describe*' => Process::result("v0.1.0-2-gabc1234\n")]);
+
     $base = base_path('storage/framework/testing/report.csv');
     File::ensureDirectoryExists(dirname($base));
 
     reportOutput(['--export' => $base]);
 
     $stem = base_path('storage/framework/testing/report');
-    $blocks = ['descriptives', 'regression', 'ai_comparison', 'types_by_version', 'types_by_window'];
+    $blocks = ['provenance', 'descriptives', 'regression', 'ai_comparison', 'types_by_version', 'types_by_window'];
 
     foreach ($blocks as $block) {
         expect(file_exists("{$stem}_{$block}.csv"))->toBeTrue("missing {$block} export");
@@ -136,6 +150,10 @@ it('exports every block as a cleanly parseable CSV', function () {
     $comparison = str_getcsv(explode("\n", (string) file_get_contents("{$stem}_ai_comparison.csv"))[1]);
     expect($comparison[5])->toBe('1.0')      // U
         ->and($comparison[8])->toBe('-0.920'); // Cliff's delta
+
+    $provenance = str_getcsv(explode("\n", (string) file_get_contents("{$stem}_provenance.csv"))[1]);
+    expect($provenance[0])->toBe('v0.1.0-2-gabc1234') // tool_version
+        ->and($provenance[1])->toBe('2022-11-30');    // ai_cutoff
 
     foreach ($blocks as $block) {
         File::delete("{$stem}_{$block}.csv");

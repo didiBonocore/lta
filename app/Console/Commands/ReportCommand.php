@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Analysis\Reporting\DatasetQueries;
+use App\Analysis\Reporting\ToolVersion;
 use App\Analysis\Statistics\EffectSize;
 use App\Analysis\Statistics\MannWhitney;
 use App\Analysis\Statistics\SimpleLinearRegression;
@@ -51,6 +52,8 @@ class ReportCommand extends Command
             return self::FAILURE;
         }
 
+        $this->stampProvenance();
+
         $this->reportVersionBlocks($metrics);
         $this->reportAiComparison($metrics);
         $this->reportTypeDistributions();
@@ -61,6 +64,22 @@ class ReportCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Head the report — and its CSV export — with the exact tool revision and active
+     * cutoff, so every emitted figure is traceable to the code that produced it.
+     */
+    private function stampProvenance(): void
+    {
+        $version = ToolVersion::resolve();
+
+        $this->components->info("lta {$version} — cutoff {$this->cutoff()->toDateString()}");
+
+        $this->csvBlocks['provenance'] = [
+            'header' => ['tool_version', 'ai_cutoff'],
+            'rows' => [[$version, $this->cutoff()->toDateString()]],
+        ];
     }
 
     /**
