@@ -14,7 +14,10 @@ use Illuminate\Support\Collection;
 final class DatasetQueries
 {
     public const array METRICS = [
-        'assertion_count',
+        'test_assertion_count',
+        'mock_assertion_count',
+        'total_assertion_count',
+        'mock_assertion_ratio',
         'mock_breadth',
         'max_mock_chain_depth',
         'size_statements',
@@ -32,7 +35,10 @@ final class DatasetQueries
         return TestObservation::query()
             ->join('snapshots', 'snapshots.id', '=', 'test_observations.snapshot_id')
             ->where('snapshots.kind', 'version_boundary')
-            ->select('test_observations.*', 'snapshots.framework_version as major')
+            ->select(['test_observations.*', 'snapshots.framework_version as major'])
+            ->orderBy('snapshots.framework_version')
+            ->orderBy('test_observations.file_path')
+            ->orderBy('test_observations.identifier')
             ->get();
     }
 
@@ -48,8 +54,10 @@ final class DatasetQueries
         return TestObservation::query()
             ->leftJoin('snapshots', 'snapshots.id', '=', 'test_observations.snapshot_id')
             ->whereNotNull('test_observations.introduced_author_date')
-            ->select('test_observations.*', 'snapshots.framework_version as major')
+            ->select(['test_observations.*', 'snapshots.framework_version as major'])
             ->orderByRaw('snapshots.framework_version IS NULL, snapshots.framework_version')
+            ->orderBy('test_observations.file_path')
+            ->orderBy('test_observations.identifier')
             ->get()
             ->unique(fn (TestObservation $o): string => "{$o->repository_id}|{$o->front_end}|{$o->file_path}|{$o->identifier}")
             ->values();

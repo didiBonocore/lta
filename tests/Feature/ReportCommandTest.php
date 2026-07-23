@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Process;
 
 /**
  * Seeds a hand-computed dataset (n = 5 per group, above the statistical floor):
- *   Laravel 9: assertion counts [1,1,2,2,3], 3 unit + 2 feature, authored pre-AI (2021)
- *   Laravel 10: assertion counts [3,3,4,4,5], all feature, authored post-AI (2023)
+ *   Laravel 9: test assertion counts [1,1,2,2,3], 3 unit + 2 feature, authored pre-AI (2021)
+ *   Laravel 10: test assertion counts [3,3,4,4,5], all feature, authored post-AI (2023)
  * Known answers — means 1.80/3.80, medians 2.00/4.00, sd 0.84, IQR 1.50 (MathPHP
  * exclusive quartiles); OLS slope 2.000, intercept -16.200, r² 0.641 (SSres 5.6 /
  * SStot 15.6); Mann-Whitney U = 1.0 (R1 = 16); Cliff's delta = -23/25 = -0.920 (large);
@@ -45,10 +45,13 @@ beforeEach(function () {
                 'identifier' => "test_{$major}_{$i}",
                 'front_end' => 'phpunit',
                 'test_type' => $types[$i],
-                'assertion_count' => $count,
+                'test_assertion_count' => $count,
+                'mock_assertion_count' => 0,
+                'total_assertion_count' => $count,
+                'mock_assertion_ratio' => 0.0,
                 'introduced_commit_sha' => 'ccc',
                 'introduced_author_date' => $authoredAt,
-                'ai_window' => $authoredAt < '2022-11-30' ? 'pre' : 'post',
+                'ai_window' => $authoredAt < '2022-06-21' ? 'pre' : 'post',
             ]);
         }
     }
@@ -57,7 +60,7 @@ beforeEach(function () {
 function reportOutput(array $options = []): string
 {
     test()->withoutMockingConsoleOutput();
-    test()->artisan('analyse:report', $options + ['--metric' => 'assertion_count']);
+    test()->artisan('analyse:report', $options + ['--metric' => 'test_assertion_count']);
 
     return Artisan::output();
 }
@@ -70,13 +73,13 @@ it('prints per-major descriptives with IQR and the least-squares trend', functio
         ->toContain('3.80')  // mean v10
         ->toContain('0.84')  // sample sd
         ->toContain('1.50')  // IQR
-        ->toContain('assertion_count = 2.000 × major -16.200   (r² = 0.641, n = 10)');
+        ->toContain('test_assertion_count = 2.000 × major -16.200   (r² = 0.641, n = 10)');
 });
 
 it('prints the pre/post-AI comparison with hand-computed U and delta', function () {
     $output = reportOutput();
 
-    expect($output)->toContain('cutoff 2022-11-30')
+    expect($output)->toContain('cutoff 2022-06-21')
         ->toContain('1.0')      // U
         ->toContain('-0.920')   // Cliff's delta
         ->toContain('large')
@@ -95,12 +98,12 @@ it('prints test-type distributions per version and per AI window as percentages'
 
 it('heads the report with the git-resolved tool version and cutoff', function () {
     Process::preventStrayProcesses();
-    Process::fake(['*describe*' => Process::result("v0.1.0-2-gabc1234\n")]);
+    Process::fake(['*describe*' => Process::result("v0.2.0-2-gabc1234\n")]);
 
     $output = reportOutput();
 
-    expect($output)->toContain('lta v0.1.0-2-gabc1234')
-        ->toContain('cutoff 2022-11-30');
+    expect($output)->toContain('lta v0.2.0-2-gabc1234')
+        ->toContain('cutoff 2022-06-21');
 });
 
 it('re-buckets against an overridden cutoff without re-blaming', function () {
@@ -116,12 +119,12 @@ it('refuses the comparison with a warning when a group is under the n=5 floor', 
     expect($output)->toContain('Refusing the pre/post comparison')
         ->toContain('n=5 floor (pre n=10, post n=0)')
         // Descriptives and distributions still print — only the tests refuse.
-        ->toContain('assertion_count = 2.000 × major');
+        ->toContain('test_assertion_count = 2.000 × major');
 });
 
 it('exports every block as a cleanly parseable CSV', function () {
     Process::preventStrayProcesses();
-    Process::fake(['*describe*' => Process::result("v0.1.0-2-gabc1234\n")]);
+    Process::fake(['*describe*' => Process::result("v0.2.0-2-gabc1234\n")]);
 
     $base = base_path('storage/framework/testing/report.csv');
     File::ensureDirectoryExists(dirname($base));
@@ -143,7 +146,7 @@ it('exports every block as a cleanly parseable CSV', function () {
     }
 
     $regression = str_getcsv(explode("\n", (string) file_get_contents("{$stem}_regression.csv"))[1]);
-    expect($regression[0])->toBe('assertion_count')
+    expect($regression[0])->toBe('test_assertion_count')
         ->and((float) $regression[1])->toEqualWithDelta(2.0, 1e-6)
         ->and((float) $regression[3])->toEqualWithDelta(0.641, 1e-3);
 
@@ -152,8 +155,8 @@ it('exports every block as a cleanly parseable CSV', function () {
         ->and($comparison[8])->toBe('-0.920'); // Cliff's delta
 
     $provenance = str_getcsv(explode("\n", (string) file_get_contents("{$stem}_provenance.csv"))[1]);
-    expect($provenance[0])->toBe('v0.1.0-2-gabc1234') // tool_version
-        ->and($provenance[1])->toBe('2022-11-30');    // ai_cutoff
+    expect($provenance[0])->toBe('v0.2.0-2-gabc1234') // tool_version
+        ->and($provenance[1])->toBe('2022-06-21');    // ai_cutoff
 
     foreach ($blocks as $block) {
         File::delete("{$stem}_{$block}.csv");
@@ -161,5 +164,6 @@ it('exports every block as a cleanly parseable CSV', function () {
 });
 
 it('rejects an unknown metric', function () {
+    /** @var \Tests\TestCase $this */
     $this->artisan('analyse:report', ['--metric' => 'nope'])->assertFailed();
 });

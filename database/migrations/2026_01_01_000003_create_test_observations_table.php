@@ -27,7 +27,10 @@ return new class extends Migration
             $table->string('test_type');             // unit|feature|integration|unknown
             $table->string('test_type_rule')->nullable();
 
-            $table->unsignedInteger('assertion_count')->default(0);
+            $table->unsignedInteger('test_assertion_count')->default(0);
+            $table->unsignedInteger('mock_assertion_count')->default(0);
+            $table->unsignedInteger('total_assertion_count')->default(0);
+            $table->double('mock_assertion_ratio')->default(0.0);
             $table->unsignedInteger('mock_breadth')->default(0);
             $table->unsignedInteger('max_mock_chain_depth')->default(0);
             $table->json('mock_kinds')->nullable();

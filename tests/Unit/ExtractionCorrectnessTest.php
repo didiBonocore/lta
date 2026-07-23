@@ -30,7 +30,10 @@ it('extracts the PHPUnit feature login test to its hand-computed values', functi
     $m = parseFixture('PhpUnit/FeatureLoginExample.php')->methods[0];
 
     expect($m->type)->toBe(TestType::Feature)
-        ->and($m->assertionCount)->toBe(2)
+        ->and($m->testAssertionCount)->toBe(2)
+        ->and($m->mockAssertionCount)->toBe(0)
+        ->and($m->totalAssertionCount)->toBe(2)
+        ->and($m->mockAssertionRatio)->toBe(0.0)
         ->and($m->mockBreadth())->toBe(0)
         ->and($m->usesRefreshDatabase)->toBeTrue()
         ->and($m->sizeStatements)->toBe(3);
@@ -40,11 +43,32 @@ it('extracts the PHPUnit unit gateway test to its hand-computed values', functio
     $m = parseFixture('PhpUnit/UnitGatewayExample.php')->methods[0];
 
     expect($m->type)->toBe(TestType::Unit)
-        ->and($m->assertionCount)->toBe(1)
+        ->and($m->testAssertionCount)->toBe(1)
+        ->and($m->mockAssertionCount)->toBe(1)
+        ->and($m->totalAssertionCount)->toBe(2)
+        ->and($m->mockAssertionRatio)->toBe(0.5)
         ->and($m->mockBreadth())->toBe(1)
         ->and($m->maxMockChainDepth())->toBe(4)
         ->and($m->mockKinds())->toBe(['container'])
         ->and($m->sizeStatements)->toBe(2);
+})->group('fixtures');
+
+it('extracts PHPUnit mock assertion fixture with stubs vs mock verifications', function () {
+    $m = parseFixture('PhpUnit/MockAssertionExample.php')->methods[0];
+
+    expect($m->testAssertionCount)->toBe(1)
+        ->and($m->mockAssertionCount)->toBe(5)
+        ->and($m->totalAssertionCount)->toBe(6)
+        ->and($m->mockAssertionRatio)->toEqualWithDelta(5 / 6, 1e-6);
+})->group('fixtures');
+
+it('extracts Pest mock assertion fixture with stubs vs mock verifications', function () {
+    $m = parseFixture('Pest/MockAssertionExample.php')->methods[0];
+
+    expect($m->testAssertionCount)->toBe(1)
+        ->and($m->mockAssertionCount)->toBe(5)
+        ->and($m->totalAssertionCount)->toBe(6)
+        ->and($m->mockAssertionRatio)->toEqualWithDelta(5 / 6, 1e-6);
 })->group('fixtures');
 
 it('normalises PHPUnit and Pest feature twins to identical IR', function () {
@@ -52,7 +76,10 @@ it('normalises PHPUnit and Pest feature twins to identical IR', function () {
     $pest = parseFixture('Pest/FeatureLoginExample.php')->methods[0];
 
     expect($pest->type)->toBe($php->type)
-        ->and($pest->assertionCount)->toBe($php->assertionCount)
+        ->and($pest->testAssertionCount)->toBe($php->testAssertionCount)
+        ->and($pest->mockAssertionCount)->toBe($php->mockAssertionCount)
+        ->and($pest->totalAssertionCount)->toBe($php->totalAssertionCount)
+        ->and($pest->mockAssertionRatio)->toBe($php->mockAssertionRatio)
         ->and($pest->mockBreadth())->toBe($php->mockBreadth())
         ->and($pest->usesRefreshDatabase)->toBe($php->usesRefreshDatabase)
         ->and($pest->sizeStatements)->toBe($php->sizeStatements);
@@ -63,7 +90,10 @@ it('normalises PHPUnit and Pest unit+mock twins to identical IR', function () {
     $pest = parseFixture('Pest/UnitGatewayExample.php')->methods[0];
 
     expect($pest->type)->toBe($php->type)->toBe(TestType::Unit)
-        ->and($pest->assertionCount)->toBe($php->assertionCount)->toBe(1)
+        ->and($pest->testAssertionCount)->toBe($php->testAssertionCount)->toBe(1)
+        ->and($pest->mockAssertionCount)->toBe($php->mockAssertionCount)->toBe(1)
+        ->and($pest->totalAssertionCount)->toBe($php->totalAssertionCount)->toBe(2)
+        ->and($pest->mockAssertionRatio)->toBe($php->mockAssertionRatio)->toBe(0.5)
         ->and($pest->mockBreadth())->toBe($php->mockBreadth())->toBe(1)
         ->and($pest->maxMockChainDepth())->toBe($php->maxMockChainDepth())->toBe(4);
 })->group('fixtures');
