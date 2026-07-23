@@ -14,6 +14,7 @@ use Tests\Support\GitFixtureRepo;
  * expected value below is already hand-computed and fixture-proven.
  */
 beforeEach(function () {
+    /** @var \Tests\TestCase $this */
     $this->root = base_path('storage/framework/testing/extract-repo');
     File::deleteDirectory($this->root);
 
@@ -42,36 +43,44 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+    /** @var \Tests\TestCase $this */
     File::deleteDirectory($this->root);
 });
 
 it('extracts HEAD into a head snapshot with one observation per test method', function () {
+    /** @var \Tests\TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
         ->assertSuccessful();
 
-    $snapshot = Snapshot::sole();
+    $snapshot = Snapshot::query()->sole();
     expect($snapshot->kind)->toBe('head')
         ->and($snapshot->commit_sha)->toBe('deadbeef')
         ->and($snapshot->framework_version)->toBeNull();
 
-    expect(TestObservation::count())->toBe(2);
+    expect(TestObservation::query()->count())->toBe(2);
 
-    $login = TestObservation::where('front_end', 'phpunit')->sole();
+    $login = TestObservation::query()->where('front_end', 'phpunit')->sole();
     expect($login->file_path)->toBe('tests/Feature/LoginTest.php')
         ->and($login->identifier)->toBe('test_user_can_login')
         ->and($login->test_type)->toBe('feature')
-        ->and($login->assertion_count)->toBe(2)
+        ->and($login->test_assertion_count)->toBe(2)
+        ->and($login->mock_assertion_count)->toBe(0)
+        ->and($login->total_assertion_count)->toBe(2)
+        ->and($login->mock_assertion_ratio)->toBe(0.0)
         ->and($login->mock_breadth)->toBe(0)
         ->and($login->uses_refresh_database)->toBeTrue()
         ->and($login->size_statements)->toBe(3)
         ->and($login->start_line)->toBe(21)   // definition range in the fixture file,
         ->and($login->end_line)->toBe(31);    // recorded for the blame pass's git log -L
 
-    $gateway = TestObservation::where('front_end', 'pest')->sole();
+    $gateway = TestObservation::query()->where('front_end', 'pest')->sole();
     expect($gateway->file_path)->toBe('tests/Unit/GatewayTest.php')
         ->and($gateway->identifier)->toBe('charges via a mocked gateway')
         ->and($gateway->test_type)->toBe('unit')
-        ->and($gateway->assertion_count)->toBe(1)
+        ->and($gateway->test_assertion_count)->toBe(1)
+        ->and($gateway->mock_assertion_count)->toBe(1)
+        ->and($gateway->total_assertion_count)->toBe(2)
+        ->and($gateway->mock_assertion_ratio)->toBe(0.5)
         ->and($gateway->mock_breadth)->toBe(1)
         ->and($gateway->max_mock_chain_depth)->toBe(4)
         ->and($gateway->mock_kinds)->toBe(['container']);
@@ -80,22 +89,24 @@ it('extracts HEAD into a head snapshot with one observation per test method', fu
 });
 
 it('is idempotent: re-extracting replaces rather than duplicates observations', function () {
+    /** @var \Tests\TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
 
-    expect(Snapshot::count())->toBe(1)
-        ->and(TestObservation::count())->toBe(2);
+    expect(Snapshot::query()->count())->toBe(1)
+        ->and(TestObservation::query()->count())->toBe(2);
 });
 
 it('survives an unparsable test file, records it, and keeps extracting the rest', function () {
+    /** @var \Tests\TestCase $this */
     File::put($this->root.'/tests/Unit/BrokenTest.php', "<?php\n\nclass BrokenTest extends TestCase {\n    public function test_broken() { \$x = ;\n");
 
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
         ->assertSuccessful();
 
-    expect(TestObservation::count())->toBe(2);
+    expect(TestObservation::query()->count())->toBe(2);
 
-    $failure = ParseFailure::sole();
+    $failure = ParseFailure::query()->sole();
     expect($failure->file_path)->toBe('tests/Unit/BrokenTest.php')
         ->and($failure->commit_sha)->toBe('deadbeef')
         ->and($failure->repository_id)->toBe($this->repository->id)
@@ -103,10 +114,11 @@ it('survives an unparsable test file, records it, and keeps extracting the rest'
 
     // Re-running replaces the failure log too — no duplicates.
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
-    expect(ParseFailure::count())->toBe(1);
+    expect(ParseFailure::query()->count())->toBe(1);
 });
 
 it('extracts from a synthetic git repository built on the fly', function () {
+    /** @var \Tests\TestCase $this */
     $repo = GitFixtureRepo::init(base_path('storage/framework/testing/extract-git-repo'));
     $repo->write('phpunit.xml', <<<'XML'
         <?xml version="1.0"?>
@@ -132,20 +144,22 @@ it('extracts from a synthetic git repository built on the fly', function () {
     $this->artisan('analyse:extract', ['full_name' => 'acme/git-shop', '--head' => true])
         ->assertSuccessful();
 
-    $observations = TestObservation::whereRelation('repository', 'full_name', 'acme/git-shop')->get();
+    $observations = TestObservation::query()->whereRelation('repository', 'full_name', 'acme/git-shop')->get();
     expect($observations)->toHaveCount(2)
         ->and($observations->firstWhere('front_end', 'phpunit')->file_path)->toBe('tests/Feature/LoginTest.php')
         ->and($observations->firstWhere('front_end', 'pest')->file_path)->toBe('tests/Unit/GatewayTest.php')
-        ->and(Snapshot::whereRelation('repository', 'full_name', 'acme/git-shop')->sole()->commit_sha)->toBe($headSha);
+        ->and(Snapshot::query()->whereRelation('repository', 'full_name', 'acme/git-shop')->sole()->commit_sha)->toBe($headSha);
 
     $repo->destroy();
 });
 
 it('fails when the repository has not been acquired', function () {
+    /** @var \Tests\TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'nobody/nothing', '--head' => true])
         ->assertFailed();
 });
 
 it('fails without --head when no version-boundary snapshots exist yet', function () {
+    /** @var \Tests\TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop'])->assertFailed();
 });
