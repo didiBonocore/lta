@@ -8,13 +8,14 @@ use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Support\Facades\File;
 use Tests\Support\GitFixtureRepo;
+use Tests\TestCase;
 
 /**
  * The fake "cloned" repository is assembled from the M0 gold-standard fixtures, so every
  * expected value below is already hand-computed and fixture-proven.
  */
 beforeEach(function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->root = base_path('storage/framework/testing/extract-repo');
     File::deleteDirectory($this->root);
 
@@ -43,12 +44,12 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     File::deleteDirectory($this->root);
 });
 
 it('extracts HEAD into a head snapshot with one observation per test method', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
         ->assertSuccessful();
 
@@ -89,7 +90,7 @@ it('extracts HEAD into a head snapshot with one observation per test method', fu
 });
 
 it('is idempotent: re-extracting replaces rather than duplicates observations', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
 
@@ -98,7 +99,7 @@ it('is idempotent: re-extracting replaces rather than duplicates observations', 
 });
 
 it('survives an unparsable test file, records it, and keeps extracting the rest', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     File::put($this->root.'/tests/Unit/BrokenTest.php', "<?php\n\nclass BrokenTest extends TestCase {\n    public function test_broken() { \$x = ;\n");
 
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
@@ -118,7 +119,7 @@ it('survives an unparsable test file, records it, and keeps extracting the rest'
 });
 
 it('extracts from a synthetic git repository built on the fly', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $repo = GitFixtureRepo::init(base_path('storage/framework/testing/extract-git-repo'));
     $repo->write('phpunit.xml', <<<'XML'
         <?xml version="1.0"?>
@@ -154,12 +155,12 @@ it('extracts from a synthetic git repository built on the fly', function () {
 });
 
 it('fails when the repository has not been acquired', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'nobody/nothing', '--head' => true])
         ->assertFailed();
 });
 
 it('fails without --head when no version-boundary snapshots exist yet', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop'])->assertFailed();
 });

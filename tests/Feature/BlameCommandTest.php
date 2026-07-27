@@ -6,6 +6,7 @@ use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Tests\Support\GitFixtureRepo;
+use Tests\TestCase;
 
 /**
  * Instrument B on a deterministic history: one test authored before the default cutoff
@@ -13,7 +14,7 @@ use Tests\Support\GitFixtureRepo;
  * appended to a pre-existing file, the case a whole-file date would get wrong.
  */
 beforeEach(function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->repo = GitFixtureRepo::init(base_path('storage/framework/testing/blame-repo'));
 
     $this->repo->write('composer.json', json_encode(['require' => ['laravel/framework' => '^9.0']]));
@@ -43,7 +44,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->repo->destroy();
 });
 
@@ -52,7 +53,7 @@ it('defaults the cutoff to the supervisor-pending date and honours the env overr
 });
 
 it('attributes each test method to its introducing commit and buckets the AI window', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:blame', ['full_name' => 'acme/eras'])->assertSuccessful();
 
     $legacy = TestObservation::query()->where('identifier', 'test_legacy')->sole();
@@ -72,7 +73,7 @@ it('attributes each test method to its introducing commit and buckets the AI win
 });
 
 it('re-buckets against an overridden cutoff for sensitivity runs', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:blame', ['full_name' => 'acme/eras', '--cutoff' => '2031-01-01'])
         ->assertSuccessful();
 
@@ -81,7 +82,7 @@ it('re-buckets against an overridden cutoff for sensitivity runs', function () {
 });
 
 it('blames only the newest extracted snapshot, leaving older snapshots null', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     // Build Instrument A rows too: the version-boundary snapshot sits at the boot commit.
     $this->artisan('analyse:snapshot', ['full_name' => 'acme/eras'])->assertSuccessful();
     $this->artisan('analyse:extract', ['full_name' => 'acme/eras'])->assertSuccessful();
@@ -97,7 +98,7 @@ it('blames only the newest extracted snapshot, leaving older snapshots null', fu
 });
 
 it('counts an observation without a line range as unattributable and leaves its columns null', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $orphan = TestObservation::query()->where('identifier', 'test_legacy')->sole()->replicate();
     $orphan->identifier = 'test_unattributable';
     $orphan->start_line = null;
@@ -114,6 +115,6 @@ it('counts an observation without a line range as unattributable and leaves its 
 });
 
 it('fails when the repository has not been acquired', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:blame', ['full_name' => 'nobody/nothing'])->assertFailed();
 });

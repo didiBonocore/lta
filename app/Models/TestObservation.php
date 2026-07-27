@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -30,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $uses_refresh_database
  * @property array|null $setup_signals
  * @property string|null $introduced_commit_sha
- * @property \Illuminate\Support\Carbon|null $introduced_author_date
+ * @property Carbon|null $introduced_author_date
  * @property string|null $ai_window
  * @property-read int|null $major Alias of snapshots.framework_version, present when the row
  *                                was selected through DatasetQueries' joined samples.

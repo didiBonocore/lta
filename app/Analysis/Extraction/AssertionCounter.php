@@ -56,8 +56,7 @@ final class AssertionCounter
         $finder = new NodeFinder;
 
         /** @var list<MethodCall|NullsafeMethodCall|StaticCall|FuncCall> $allCalls */
-        $allCalls = $finder->find($body, static fn (Node $n): bool =>
-            $n instanceof MethodCall
+        $allCalls = $finder->find($body, static fn (Node $n): bool => $n instanceof MethodCall
             || $n instanceof NullsafeMethodCall
             || $n instanceof StaticCall
             || $n instanceof FuncCall

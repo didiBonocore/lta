@@ -21,4 +21,3 @@ return [
         'Sleep' => ['assertSlept', 'assertSleptTimes', 'assertSleptWith', 'assertSleptWithAny'],
     ],
 ];
-

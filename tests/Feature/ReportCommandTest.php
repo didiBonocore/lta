@@ -8,6 +8,7 @@ use App\Models\TestObservation;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
+use Tests\TestCase;
 
 /**
  * Seeds a hand-computed dataset (n = 5 per group, above the statistical floor):
@@ -164,6 +165,6 @@ it('exports every block as a cleanly parseable CSV', function () {
 });
 
 it('rejects an unknown metric', function () {
-    /** @var \Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->artisan('analyse:report', ['--metric' => 'nope'])->assertFailed();
 });
