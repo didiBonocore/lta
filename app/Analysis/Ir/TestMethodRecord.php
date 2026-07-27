@@ -21,7 +21,10 @@ final class TestMethodRecord
         public FrontEndKind $frontEnd,
         public TestType $type = TestType::Unknown,
         public ?string $typeRule = null,    // which classifier rule fired (auditability)
-        public int $assertionCount = 0,
+        public int $testAssertionCount = 0,
+        public int $mockAssertionCount = 0,
+        public int $totalAssertionCount = 0,
+        public float $mockAssertionRatio = 0.0,
         public array $mocks = [],
         public int $sizeStatements = 0,
         public int $sizeLoc = 0,

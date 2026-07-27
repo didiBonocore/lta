@@ -51,12 +51,17 @@ abstract class AbstractFrontEnd implements FrontEnd
         $finder = new NodeFinder;
         $statements = $finder->find($body, static fn (Node $n): bool => $n instanceof Node\Stmt);
 
+        $assertionRes = $this->assertions->count($body);
+
         return new TestMethodRecord(
             identifier: $identifier,
             frontEnd: $this->kind(),
             type: $type,
             typeRule: $rule,
-            assertionCount: $this->assertions->count($body),
+            testAssertionCount: $assertionRes->testAssertionCount,
+            mockAssertionCount: $assertionRes->mockAssertionCount,
+            totalAssertionCount: $assertionRes->total(),
+            mockAssertionRatio: $assertionRes->ratio(),
             mocks: $mocks,
             sizeStatements: count($statements),
             sizeLoc: max(1, ($ownerNode->getEndLine() - $ownerNode->getStartLine()) + 1),

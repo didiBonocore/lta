@@ -6,7 +6,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $full_name
+ * @property string $owner
+ * @property string $name
+ * @property string $url
+ * @property string $clone_path
+ * @property string $head_sha
+ * @property string|null $license
+ * @property Carbon|null $github_created_at
+ * @property Carbon|null $cloned_at
+ * @property string|null $primary_test_framework
+ */
 class Repository extends Model
 {
     protected $guarded = [];

@@ -7,7 +7,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int $repository_id
+ * @property string $commit_sha
+ * @property Carbon|null $commit_date
+ * @property int|null $framework_version
+ * @property string $kind
+ */
 class Snapshot extends Model
 {
     protected $guarded = [];
