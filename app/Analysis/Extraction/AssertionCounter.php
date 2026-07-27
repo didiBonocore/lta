@@ -160,7 +160,6 @@ final class AssertionCounter
             $foundParent = false;
             foreach ($allCalls as $candidate) {
                 if (($candidate instanceof MethodCall || $candidate instanceof NullsafeMethodCall)
-                    && $candidate->var instanceof Node
                     && spl_object_id($candidate->var) === $currentId) {
 
                     $parentName = CallName::of($candidate);

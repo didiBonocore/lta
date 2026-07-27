@@ -23,13 +23,13 @@ use Illuminate\Support\Carbon;
  * @property float $mock_assertion_ratio
  * @property int $mock_breadth
  * @property int $max_mock_chain_depth
- * @property array|null $mock_kinds
+ * @property array<string>|null $mock_kinds
  * @property int $size_statements
  * @property int $size_loc
  * @property int|null $start_line
  * @property int|null $end_line
  * @property bool $uses_refresh_database
- * @property array|null $setup_signals
+ * @property array<string>|null $setup_signals
  * @property string|null $introduced_commit_sha
  * @property Carbon|null $introduced_author_date
  * @property string|null $ai_window
