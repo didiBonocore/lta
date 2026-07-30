@@ -97,3 +97,31 @@ it('normalises PHPUnit and Pest unit+mock twins to identical IR', function () {
         ->and($pest->mockBreadth())->toBe($php->mockBreadth())->toBe(1)
         ->and($pest->maxMockChainDepth())->toBe($php->maxMockChainDepth())->toBe(4);
 })->group('fixtures');
+
+it('normalises one Pest expectation chain and three PHPUnit assertions to identical counts', function () {
+    $php = parseFixture('PhpUnit/ChainedExpectationExample.php')->methods[0];
+    $pest = parseFixture('Pest/ChainedExpectationExample.php')->methods[0];
+
+    expect($pest->testAssertionCount)->toBe($php->testAssertionCount)->toBe(3)
+        ->and($pest->mockAssertionCount)->toBe($php->mockAssertionCount)->toBe(0)
+        ->and($pest->totalAssertionCount)->toBe($php->totalAssertionCount)->toBe(3)
+        ->and($pest->mockAssertionRatio)->toBe($php->mockAssertionRatio)->toBe(0.0);
+})->group('fixtures');
+
+it('counts negation, conjunction and higher-order modifiers to their hand-computed values', function () {
+    $m = parseFixture('Pest/NegationModifierExample.php')->methods[0];
+
+    expect($m->testAssertionCount)->toBe(4)
+        ->and($m->mockAssertionCount)->toBe(0)
+        ->and($m->totalAssertionCount)->toBe(4)
+        ->and($m->mockAssertionRatio)->toBe(0.0);
+})->group('fixtures');
+
+it('does not count toArray() calls whose chain is not rooted at expect()', function () {
+    $m = parseFixture('Pest/ToArrayGuardExample.php')->methods[0];
+
+    expect($m->testAssertionCount)->toBe(1)
+        ->and($m->mockAssertionCount)->toBe(0)
+        ->and($m->totalAssertionCount)->toBe(1)
+        ->and($m->mockAssertionRatio)->toBe(0.0);
+})->group('fixtures');

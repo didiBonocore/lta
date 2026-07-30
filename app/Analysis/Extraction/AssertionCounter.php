@@ -9,6 +9,8 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\NullsafeMethodCall;
+use PhpParser\Node\Expr\NullsafePropertyFetch;
+use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\NodeFinder;
 
@@ -227,10 +229,47 @@ final class AssertionCounter
 
     private function isTestAssertion(Node $call, string $name): bool
     {
-        if ($call instanceof FuncCall && strtolower($name) === 'expect') {
+        if ($this->isPestExpectationTerminator($call, $name)) {
             return true;
         }
 
         return (bool) preg_match('/^assert/i', $name);
+    }
+
+    /**
+     * A Pest expectation terminator: a method whose name matches /^to[A-Z]/ (toBe, toHaveKey,
+     * toThrow, ...) or sequence(), sitting in a chain whose innermost receiver is the global
+     * expect() function call. Both conditions are required — the chain-root constraint is what
+     * excludes domain methods such as $model->toArray(). The expect() call itself is not
+     * counted; each terminator counts once, so expect($x)->toBe(1)->toBeInt() yields 2,
+     * matching its two-call PHPUnit equivalent (paradigm-invariant counting).
+     *
+     * The walk follows ->var receivers inward through method hops (toBe, and, json) and
+     * property hops (not, each) alike, so modifiers are traversed but never counted.
+     *
+     * sequence() is deliberately counted as exactly one terminator and the closures passed to
+     * it are not descended into: expectations inside them (fn ($e) => $e->toBe(1)) root at the
+     * closure parameter rather than at expect(), so the chain-root test rejects them. This is
+     * a documented decision, traceable to the dissertation's construct validity section.
+     */
+    private function isPestExpectationTerminator(Node $call, string $name): bool
+    {
+        if (! ($call instanceof MethodCall || $call instanceof NullsafeMethodCall)) {
+            return false;
+        }
+
+        if (preg_match('/^to[A-Z]/', $name) !== 1 && strtolower($name) !== 'sequence') {
+            return false;
+        }
+
+        $node = $call->var;
+        while ($node instanceof MethodCall
+            || $node instanceof NullsafeMethodCall
+            || $node instanceof PropertyFetch
+            || $node instanceof NullsafePropertyFetch) {
+            $node = $node->var;
+        }
+
+        return $node instanceof FuncCall && strtolower(CallName::of($node) ?? '') === 'expect';
     }
 }
