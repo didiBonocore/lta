@@ -117,6 +117,24 @@ it('counts negation, conjunction and higher-order modifiers to their hand-comput
         ->and($m->mockAssertionRatio)->toBe(0.0);
 })->group('fixtures');
 
+it('counts closure-form grouping expectations to their hand-computed values', function () {
+    $m = parseFixture('Pest/HigherOrderExpectationExample.php')->methods[0];
+
+    expect($m->testAssertionCount)->toBe(5)
+        ->and($m->mockAssertionCount)->toBe(0)
+        ->and($m->totalAssertionCount)->toBe(5)
+        ->and($m->mockAssertionRatio)->toBe(0.0);
+})->group('fixtures');
+
+it('does not count each() or when() on chains not rooted at expect()', function () {
+    $m = parseFixture('Pest/HigherOrderExpectationExample.php')->methods[1];
+
+    expect($m->testAssertionCount)->toBe(0)
+        ->and($m->mockAssertionCount)->toBe(0)
+        ->and($m->totalAssertionCount)->toBe(0)
+        ->and($m->mockAssertionRatio)->toBe(0.0);
+})->group('fixtures');
+
 it('does not count toArray() calls whose chain is not rooted at expect()', function () {
     $m = parseFixture('Pest/ToArrayGuardExample.php')->methods[0];
 

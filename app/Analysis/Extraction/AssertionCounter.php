@@ -40,6 +40,15 @@ final class AssertionCounter
         'once', 'twice', 'times', 'atleast', 'atleastonce', 'atmost', 'never',
     ];
 
+    /**
+     * Higher-order expectation calls that group sub-expectations, typically in closures.
+     * Each counts as exactly one terminator and its arguments are never descended into:
+     * the number of inner expectations they evaluate is a runtime property of the subject,
+     * so no determinate static count exists. Documented in Appendix C and in the construct
+     * validity discussion.
+     */
+    private const GROUPING_EXPECTATIONS = ['sequence', 'each', 'when', 'unless'];
+
     private const DEFAULT_FACADE_MOCK_ASSERTIONS = [
         'Event' => ['assertDispatched', 'assertNotDispatched', 'assertNothingDispatched'],
         'Queue' => ['assertPushed', 'assertNotPushed', 'assertPushedOn'],
@@ -238,19 +247,21 @@ final class AssertionCounter
 
     /**
      * A Pest expectation terminator: a method whose name matches /^to[A-Z]/ (toBe, toHaveKey,
-     * toThrow, ...) or sequence(), sitting in a chain whose innermost receiver is the global
-     * expect() function call. Both conditions are required — the chain-root constraint is what
-     * excludes domain methods such as $model->toArray(). The expect() call itself is not
-     * counted; each terminator counts once, so expect($x)->toBe(1)->toBeInt() yields 2,
-     * matching its two-call PHPUnit equivalent (paradigm-invariant counting).
+     * toThrow, ...) or is a GROUPING_EXPECTATIONS call, sitting in a chain whose innermost
+     * receiver is the global expect() function call. Both conditions are required — the
+     * chain-root constraint is what excludes domain methods such as $model->toArray(), or a
+     * Laravel collection's each()/when() on a non-expectation subject. The expect() call
+     * itself is not counted; each terminator counts once, so expect($x)->toBe(1)->toBeInt()
+     * yields 2, matching its two-call PHPUnit equivalent (paradigm-invariant counting).
      *
      * The walk follows ->var receivers inward through method hops (toBe, and, json) and
      * property hops (not, each) alike, so modifiers are traversed but never counted.
      *
-     * sequence() is deliberately counted as exactly one terminator and the closures passed to
-     * it are not descended into: expectations inside them (fn ($e) => $e->toBe(1)) root at the
-     * closure parameter rather than at expect(), so the chain-root test rejects them. This is
-     * a documented decision, traceable to the dissertation's construct validity section.
+     * Grouping expectations (sequence, each, when, unless) are deliberately counted as exactly
+     * one terminator each and the closures passed to them are not descended into: expectations
+     * inside them (fn ($e) => $e->toBe(1)) root at the closure parameter rather than at
+     * expect(), so the chain-root test rejects them. This is a documented decision, traceable
+     * to the dissertation's construct validity section.
      */
     private function isPestExpectationTerminator(Node $call, string $name): bool
     {
@@ -258,7 +269,8 @@ final class AssertionCounter
             return false;
         }
 
-        if (preg_match('/^to[A-Z]/', $name) !== 1 && strtolower($name) !== 'sequence') {
+        if (preg_match('/^to[A-Z]/', $name) !== 1
+            && ! in_array(strtolower($name), self::GROUPING_EXPECTATIONS, true)) {
             return false;
         }
 
