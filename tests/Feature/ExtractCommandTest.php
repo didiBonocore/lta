@@ -6,6 +6,7 @@ use App\Models\ParseFailure;
 use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
+use App\Models\UnroutableFile;
 use Illuminate\Support\Facades\File;
 use Tests\Support\GitFixtureRepo;
 use Tests\TestCase;
@@ -116,6 +117,37 @@ it('survives an unparsable test file, records it, and keeps extracting the rest'
     // Re-running replaces the failure log too — no duplicates.
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
     expect(ParseFailure::query()->count())->toBe(1);
+});
+
+it('persists unroutable files with their detected base class, without changing what routes', function () {
+    /** @var TestCase $this */
+    File::put($this->root.'/tests/Unit/CodeceptionBaseTest.php', <<<'PHP'
+        <?php
+
+        class CodeceptionBaseTest extends \Codeception\TestCase\Test
+        {
+            public function test_something(): void
+            {
+                $this->assertTrue(true);
+            }
+        }
+        PHP);
+
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
+        ->assertSuccessful();
+
+    // Routing unchanged: the two fixture files still produce their observations.
+    expect(TestObservation::query()->count())->toBe(2);
+
+    $unroutable = UnroutableFile::query()->sole();
+    expect($unroutable->file_path)->toBe('tests/Unit/CodeceptionBaseTest.php')
+        ->and($unroutable->base_class)->toBe('Codeception\TestCase\Test')
+        ->and($unroutable->commit_sha)->toBe('deadbeef')
+        ->and($unroutable->repository_id)->toBe($this->repository->id);
+
+    // Re-running replaces the unroutable log too — no duplicates.
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
+    expect(UnroutableFile::query()->count())->toBe(1);
 });
 
 it('extracts from a synthetic git repository built on the fly', function () {

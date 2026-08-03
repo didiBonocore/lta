@@ -45,6 +45,7 @@ class AcquireCommand extends Command
         }
 
         $headSha = trim(Process::path($dest)->run(['git', 'rev-parse', 'HEAD'])->throw()->output());
+        $defaultBranch = $this->defaultBranch($dest);
         $metadata = $this->fetchGitHubMetadata($fullName);
 
         Repository::updateOrCreate(
@@ -55,14 +56,32 @@ class AcquireCommand extends Command
                 'url' => $url,
                 'clone_path' => $dest,
                 'head_sha' => $headSha,
+                'default_branch' => $defaultBranch,
                 'cloned_at' => now(),
                 ...$metadata,
             ],
         );
 
-        $this->info("Acquired {$fullName} @ {$headSha}");
+        $this->info("Acquired {$fullName} @ {$headSha} (default branch: ".($defaultBranch ?? 'unknown').')');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The branch HEAD points at — the trunk that analyse:snapshot's --first-parent walk is
+     * relative to, without which a reader cannot verify the walk. Falls back to the remote's
+     * HEAD symref where the local HEAD is detached; null where neither resolves.
+     */
+    private function defaultBranch(string $dest): ?string
+    {
+        $branch = trim(Process::path($dest)->run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])->output());
+        if ($branch !== '' && $branch !== 'HEAD') {
+            return $branch;
+        }
+
+        $symref = trim(Process::path($dest)->run(['git', 'symbolic-ref', 'refs/remotes/origin/HEAD'])->output());
+
+        return $symref !== '' ? str_replace('refs/remotes/origin/', '', $symref) : null;
     }
 
     /**

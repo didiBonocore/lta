@@ -8,6 +8,7 @@ use App\Analysis\Discovery\SuiteDiscovery;
 use App\Analysis\FrontEnd\FrontEnd;
 use App\Analysis\FrontEnd\PestFrontEnd;
 use App\Analysis\FrontEnd\PhpUnitFrontEnd;
+use App\Analysis\FrontEnd\UnroutableClassifier;
 use App\Analysis\Ir\Enums\TestType;
 use App\Analysis\Ir\TestFileRecord;
 use App\Analysis\Tree\GitTree;
@@ -17,6 +18,7 @@ use App\Models\ParseFailure;
 use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
+use App\Models\UnroutableFile;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use PhpParser\Error as ParseError;
@@ -112,11 +114,13 @@ class ExtractCommand extends Command
     ): array {
         $snapshot->observations()->delete();
         $snapshot->parseFailures()->delete();
+        UnroutableFile::where('snapshot_id', $snapshot->id)->delete();
 
         $files = $discovery->discover($tree);
         // Pest before PHPUnit: Pest files are plain PHP with no class to anchor on, so the
         // more specific closure-shape check must get first refusal.
         $frontEnds = [new PestFrontEnd, new PhpUnitFrontEnd];
+        $classifier = new UnroutableClassifier;
 
         $rows = [];
         $observationsPerFrontEnd = [];
@@ -145,8 +149,19 @@ class ExtractCommand extends Command
                 continue;
             }
 
+            // Declined by every front end: routing is unchanged, but the exclusion is
+            // persisted with the detected base class so coverage loss at a checkpoint is
+            // auditable (Appendix C) rather than a console counter — a Codeception era
+            // previously read as "0 observations, 0.00% parse failures" with no trace why.
             if ($record === null) {
                 $unroutable++;
+                UnroutableFile::create([
+                    'repository_id' => $repository->id,
+                    'snapshot_id' => $snapshot->id,
+                    'file_path' => $relativePath,
+                    'commit_sha' => (string) $snapshot->commit_sha,
+                    'base_class' => $classifier->baseClassOf($source),
+                ]);
 
                 continue;
             }
