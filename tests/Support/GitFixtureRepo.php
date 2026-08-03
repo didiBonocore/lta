@@ -52,6 +52,32 @@ final class GitFixtureRepo
         return trim($this->git(['rev-parse', 'HEAD']));
     }
 
+    /** Create and switch to a branch off the current HEAD. */
+    public function branch(string $name): self
+    {
+        $this->git(['checkout', '-b', $name]);
+
+        return $this;
+    }
+
+    public function checkout(string $name): self
+    {
+        $this->git(['checkout', $name]);
+
+        return $this;
+    }
+
+    /** Merge a branch with a real merge commit (--no-ff) at a fixed date; returns the sha. */
+    public function merge(string $branch, string $message, string $date): string
+    {
+        $this->git(['merge', '--no-ff', '--no-gpg-sign', '-m', $message, $branch], [
+            'GIT_AUTHOR_DATE' => $date,
+            'GIT_COMMITTER_DATE' => $date,
+        ]);
+
+        return $this->head();
+    }
+
     public function destroy(): void
     {
         File::deleteDirectory($this->root);

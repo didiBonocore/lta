@@ -8,6 +8,7 @@ use App\Models\ParseFailure;
 use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
+use App\Models\UnroutableFile;
 use Illuminate\Console\Command;
 
 /**
@@ -69,6 +70,7 @@ class VerifyCommand extends Command
             + TestObservation::whereNotIn('repository_id', Repository::select('id'))->count()
             + Snapshot::whereNotIn('repository_id', Repository::select('id'))->count()
             + ParseFailure::whereNotIn('snapshot_id', Snapshot::select('id'))->count()
+            + UnroutableFile::whereNotIn('snapshot_id', Snapshot::select('id'))->count()
             // Cross-link consistency FKs cannot enforce: an observation must belong to the
             // same repository as its snapshot.
             + TestObservation::join('snapshots', 'snapshots.id', '=', 'test_observations.snapshot_id')
@@ -82,6 +84,14 @@ class VerifyCommand extends Command
     {
         $name = (string) $repository->full_name;
         $snapshots = $repository->snapshots()->where('kind', 'version_boundary')->orderBy('framework_version')->get();
+
+        // Walk provenance: --first-parent is only meaningful relative to a trunk, and a
+        // reader cannot verify the walk without knowing which branch HEAD pointed at.
+        $this->okRow($name, 'provenance', sprintf(
+            'HEAD %s on %s',
+            substr((string) $repository->head_sha, 0, 12),
+            $repository->default_branch ?? '(default branch unknown)',
+        ));
 
         // Strictly ascending, duplicate-free majors.
         $majors = $snapshots->pluck('framework_version')->all();
@@ -107,12 +117,42 @@ class VerifyCommand extends Command
             $this->warnRow($name, 'empty snapshots', 'majors '.$empty->pluck('framework_version')->implode(', ').' have 0 observations');
         }
 
+        // A snapshot whose suite has files but zero observations is what a silently-excluded
+        // framework looks like (e.g. a Codeception era); it must not require a human reading
+        // a progress table to notice.
+        foreach ($empty as $snapshot) {
+            $unroutable = UnroutableFile::where('snapshot_id', $snapshot->id)->count();
+            $failures = ParseFailure::where('snapshot_id', $snapshot->id)->count();
+            if ($unroutable + $failures > 0) {
+                $this->warnRow($name, 'files but zero observations', sprintf(
+                    'major %d has %d unroutable file(s) and %d parse failure(s) but 0 observations — excluded framework?',
+                    $snapshot->framework_version,
+                    $unroutable,
+                    $failures,
+                ));
+            }
+        }
+
         // Snapshot author dates monotonic with major order (soft — messy histories exist).
         $stamps = $snapshots->pluck('commit_date')->filter()->map(fn ($d) => $d->timestamp)->values()->all();
         $sorted = $stamps;
         sort($sorted);
         if (count($stamps) > 1 && $stamps !== $sorted) {
             $this->warnRow($name, 'snapshot dates monotonic', 'representative dates are not in major order');
+        }
+
+        // Trunk-position monotonicity: with the walk constrained to first-parent, a major
+        // whose first_parent_index is out of order means the constraint genuinely oscillated
+        // on trunk (e.g. 9 → 10 → 9) — a real property of the project worth surfacing, where
+        // a date inversion alone may just be merge-date noise.
+        $indexes = $snapshots->pluck('first_parent_index')->filter(fn ($i) => $i !== null)->values()->all();
+        $sortedIndexes = $indexes;
+        sort($sortedIndexes);
+        if (count($indexes) > 1 && $indexes !== $sortedIndexes) {
+            $this->warnRow($name, 'constraint oscillates on trunk', sprintf(
+                'trunk positions by major: %s',
+                $snapshots->map(fn (Snapshot $s): string => "{$s->framework_version}@{$s->first_parent_index}")->implode(', '),
+            ));
         }
 
         // Instrument B attrition within the blame scope (the newest extracted snapshot).
@@ -142,6 +182,17 @@ class VerifyCommand extends Command
             $failures,
             $failures + $total,
         ));
+
+        // Unroutable files per checkpoint (informational — files that parse but no front end
+        // owns; the per-major breakdown is the audit trail for coverage loss).
+        $unroutableTotal = UnroutableFile::where('repository_id', $repository->id)->count();
+        $perMajor = $snapshots
+            ->map(fn (Snapshot $s): array => [$s->framework_version, UnroutableFile::where('snapshot_id', $s->id)->count()])
+            ->filter(fn (array $pair): bool => $pair[1] > 0)
+            ->map(fn (array $pair): string => "major {$pair[0]}: {$pair[1]}");
+        $this->okRow($name, 'unroutable files', $unroutableTotal === 0
+            ? 'none'
+            : "{$unroutableTotal} ({$perMajor->implode(', ')})");
     }
 
     private function record(string $repository, string $check, bool $passed, string $detail): void

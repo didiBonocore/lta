@@ -34,6 +34,35 @@ it('full-clones a new repository and records provenance with GitHub metadata', f
         ->and($repository->cloned_at)->not->toBeNull();
 });
 
+it('records the default branch HEAD points at', function () {
+    Process::preventStrayProcesses();
+    Process::fake([
+        '*clone*' => Process::result(),
+        '*abbrev-ref*' => Process::result("master\n"),
+        '*rev-parse*' => Process::result("abc123def456\n"),
+    ]);
+    Http::fake(['api.github.com/*' => Http::response(['license' => null, 'created_at' => null])]);
+
+    $this->artisan('analyse:acquire', ['full_name' => 'acme/shop'])->assertSuccessful();
+
+    expect(Repository::sole()->default_branch)->toBe('master');
+});
+
+it('falls back to the remote HEAD symref when the local HEAD is detached', function () {
+    Process::preventStrayProcesses();
+    Process::fake([
+        '*clone*' => Process::result(),
+        '*abbrev-ref*' => Process::result("HEAD\n"),
+        '*rev-parse*' => Process::result("abc123def456\n"),
+        '*symbolic-ref*' => Process::result("refs/remotes/origin/develop\n"),
+    ]);
+    Http::fake(['api.github.com/*' => Http::response(['license' => null, 'created_at' => null])]);
+
+    $this->artisan('analyse:acquire', ['full_name' => 'acme/shop'])->assertSuccessful();
+
+    expect(Repository::sole()->default_branch)->toBe('develop');
+});
+
 it('skips the clone when the repository is already on disk', function () {
     $dest = base_path('storage/framework/testing/corpus/acme__shop');
     File::ensureDirectoryExists($dest);
