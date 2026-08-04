@@ -130,7 +130,10 @@ class ExtractCommand extends Command
             }
 
             try {
-                $record = $router->route($source)?->parse($relativePath, $source);
+                // Single parse per file: the front end consumes the tree the router
+                // decided on, rather than re-parsing the source.
+                $routed = $router->route($source);
+                $record = $routed?->frontEnd->parseStatements($relativePath, $routed->statements);
             } catch (ParseError $e) {
                 $parseFailures++;
                 ParseFailure::create([

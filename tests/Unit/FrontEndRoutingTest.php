@@ -15,9 +15,9 @@ use PhpParser\Error as ParseError;
  */
 function routeSource(string $code): ?string
 {
-    $frontEnd = (new FrontEndRouter)->route($code);
+    $routed = (new FrontEndRouter)->route($code);
 
-    return $frontEnd === null ? null : $frontEnd::class;
+    return $routed === null ? null : $routed->frontEnd::class;
 }
 
 function routeFixture(string $relative): ?string

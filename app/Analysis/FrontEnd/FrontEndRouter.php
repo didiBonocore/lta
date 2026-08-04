@@ -51,25 +51,37 @@ final class FrontEndRouter
     }
 
     /**
-     * The owning front end for one file's source, or null when no front end owns it.
+     * The owning front end for one file's source together with the parse tree the decision
+     * was made on, or null when no front end owns it. The file is parsed exactly once:
+     * NameResolver runs in attribute-only mode (replaceNodes: false), so the tree handed to
+     * the front end is structurally identical to a fresh parse and no observation can
+     * differ from the parse-twice era.
      *
      * @throws Error the caller records parse failures
      */
-    public function route(string $source): ?FrontEnd
+    public function route(string $source): ?RoutedFile
     {
         $ast = $this->parser->parse($source);
         if ($ast === null) {
             return null;
         }
 
-        $traverser = new NodeTraverser(new NameResolver);
+        $traverser = new NodeTraverser(new NameResolver(options: ['replaceNodes' => false]));
         $ast = $traverser->traverse($ast);
 
         if ($this->hasFileScopePestCall($ast)) {
-            return $this->pest;
+            return new RoutedFile($this->pest, $ast);
         }
 
-        return $this->declaresTestCaseClass($ast) ? $this->phpUnit : null;
+        return $this->declaresTestCaseClass($ast) ? new RoutedFile($this->phpUnit, $ast) : null;
+    }
+
+    /** The resolved form of a name where NameResolver could resolve it; the name as written otherwise. */
+    private function resolved(Name $name): Name
+    {
+        $resolvedName = $name->getAttribute('resolvedName');
+
+        return $resolvedName instanceof Name ? $resolvedName : $name;
     }
 
     /**
@@ -82,9 +94,12 @@ final class FrontEndRouter
      */
     private function hasFileScopePestCall(array $ast): bool
     {
-        $visitor = new class extends NodeVisitorAbstract
+        $router = $this;
+        $visitor = new class($router) extends NodeVisitorAbstract
         {
             public bool $found = false;
+
+            public function __construct(private FrontEndRouter $router) {}
 
             public function enterNode(Node $node): ?int
             {
@@ -94,7 +109,7 @@ final class FrontEndRouter
 
                 if ($node instanceof FuncCall
                     && $node->name instanceof Name
-                    && in_array(strtolower($node->name->getLast()), ['it', 'test'], true)) {
+                    && in_array(strtolower($this->router->resolvedLast($node->name)), ['it', 'test'], true)) {
                     $this->found = true;
 
                     return NodeVisitor::STOP_TRAVERSAL;
@@ -123,11 +138,17 @@ final class FrontEndRouter
         foreach ((new NodeFinder)->findInstanceOf($ast, Class_::class) as $class) {
             if ($class->name !== null
                 && $class->extends !== null
-                && preg_match('/TestCase$/', $class->extends->getLast()) === 1) {
+                && preg_match('/TestCase$/', $this->resolvedLast($class->extends)) === 1) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /** Final segment of the resolved name — the value every routing comparison runs on. */
+    public function resolvedLast(Name $name): string
+    {
+        return $this->resolved($name)->getLast();
     }
 }

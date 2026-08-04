@@ -9,6 +9,7 @@ use App\Analysis\Extraction\AssertionCounter;
 use App\Analysis\Extraction\CallName;
 use App\Analysis\Extraction\MockDetector;
 use App\Analysis\Ir\Enums\FrontEndKind;
+use App\Analysis\Ir\TestFileRecord;
 use App\Analysis\Ir\TestMethodRecord;
 use PhpParser\Node;
 use PhpParser\NodeFinder;
@@ -33,6 +34,17 @@ abstract class AbstractFrontEnd implements FrontEnd
     }
 
     abstract protected function kind(): FrontEndKind;
+
+    /**
+     * Convenience wrapper: parse the source, then build from the tree. The routed pipeline
+     * calls parseStatements() directly with the tree the router already parsed.
+     */
+    public function parse(string $path, string $source): ?TestFileRecord
+    {
+        $statements = $this->parser->parse($source);
+
+        return $statements === null ? null : $this->parseStatements($path, $statements);
+    }
 
     /**
      * @param  Node[]  $body  statements of the test

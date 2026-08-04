@@ -88,27 +88,45 @@ class AcquireCommand extends Command
      * Best-effort provenance from the GitHub API; the clone itself is the primary artefact,
      * so an unreachable API degrades to nulls rather than failing the acquisition.
      *
-     * @return array{license: ?string, github_created_at: ?string}
+     * Stars, watchers, forks and archived status are the corpus's descriptive
+     * characteristics (Appendix A) — never criteria; popularity is deliberately not a
+     * quality filter. They are recorded here because they are unrecoverable if a repository
+     * is deleted or archived later. The fork flag and parent feed screening's
+     * independent-history criterion.
+     *
+     * @return array<string, mixed>
      */
     private function fetchGitHubMetadata(string $fullName): array
     {
+        $empty = [
+            'license' => null, 'github_created_at' => null, 'stars' => null,
+            'watchers' => null, 'forks' => null, 'archived' => null,
+            'is_fork' => null, 'fork_parent' => null,
+        ];
+
         try {
             $response = Http::acceptJson()->get("https://api.github.com/repos/{$fullName}");
         } catch (ConnectionException) {
-            $this->warn('GitHub API unreachable — license/created_at left empty.');
+            $this->warn('GitHub API unreachable — descriptive characteristics left empty.');
 
-            return ['license' => null, 'github_created_at' => null];
+            return $empty;
         }
 
         if (! $response->successful()) {
-            $this->warn("GitHub API returned {$response->status()} — license/created_at left empty.");
+            $this->warn("GitHub API returned {$response->status()} — descriptive characteristics left empty.");
 
-            return ['license' => null, 'github_created_at' => null];
+            return $empty;
         }
 
         return [
             'license' => $response->json('license.spdx_id'),
             'github_created_at' => $response->json('created_at'),
+            'stars' => $response->json('stargazers_count'),
+            'watchers' => $response->json('subscribers_count'),
+            'forks' => $response->json('forks_count'),
+            'archived' => $response->json('archived'),
+            'is_fork' => $response->json('fork'),
+            'fork_parent' => $response->json('parent.full_name'),
         ];
     }
 }

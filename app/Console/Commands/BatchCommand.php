@@ -13,6 +13,15 @@ use Throwable;
  * verify. A failing stage skips the repository's remaining stages but never aborts the
  * batch (continue-on-failure); failed repositories are listed at the end and the exit code
  * is non-zero so the batch can gate scripts, mirroring analyse:verify.
+ *
+ * Mining has a mandatory human gate in the middle — the tutorial/demo criterion cannot be
+ * automated — so there are two entry points, not one end-to-end command:
+ *
+ *   analyse:batch --screen candidates.txt   acquire + screen every candidate, then stop
+ *       (operator answers manual criteria, runs analyse:screen --finalise)
+ *   analyse:batch corpus.txt                snapshot + extract + blame + verify
+ *
+ * A single command spanning the gate would either skip it or block on it.
  */
 class BatchCommand extends Command
 {
@@ -24,7 +33,14 @@ class BatchCommand extends Command
         'analyse:verify',
     ];
 
-    protected $signature = 'analyse:batch {file : text file with one owner/repo per line}';
+    private const array SCREEN_STAGES = [
+        'analyse:acquire',
+        'analyse:screen',
+    ];
+
+    protected $signature = 'analyse:batch
+        {file : text file with one owner/repo per line}
+        {--screen : acquire and screen candidates only, stopping at the manual gate}';
 
     protected $description = 'Run the full pipeline over a corpus file, serially, continue-on-failure';
 
@@ -48,6 +64,7 @@ class BatchCommand extends Command
             return self::FAILURE;
         }
 
+        $stages = $this->option('screen') ? self::SCREEN_STAGES : self::STAGES;
         $summary = [];
         $failed = [];
 
@@ -57,7 +74,7 @@ class BatchCommand extends Command
             $row = [$fullName];
             $broken = false;
 
-            foreach (self::STAGES as $stage) {
+            foreach ($stages as $stage) {
                 if ($broken) {
                     $row[] = '–';
 
@@ -77,7 +94,11 @@ class BatchCommand extends Command
         }
 
         $this->components->info('Batch summary');
-        $this->table(['repository', ...array_map(fn (string $s): string => str_replace('analyse:', '', $s), self::STAGES)], $summary);
+        $this->table(['repository', ...array_map(fn (string $s): string => str_replace('analyse:', '', $s), $stages)], $summary);
+
+        if ($this->option('screen') && $failed === []) {
+            $this->info('Screening done. Answer the manual criteria (analyse:screen owner/repo --manual=... --reason="..."), then run analyse:screen --finalise.');
+        }
 
         if ($failed !== []) {
             $this->error(sprintf('%d of %d repositories failed: %s', count($failed), $repositories->count(), implode(', ', $failed)));
