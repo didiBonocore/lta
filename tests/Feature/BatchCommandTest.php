@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Models\Candidate;
 use App\Models\Repository;
+use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -63,6 +65,19 @@ it('continues past a failing repository and lists it at the end', function () {
     expect(TestObservation::count())->toBe(3)
         ->and(TestObservation::whereNotNull('ai_window')->count())->toBe(2)
         ->and(Repository::where('full_name', 'acme/missing')->exists())->toBeFalse();
+});
+
+it('with --screen acquires and screens only, stopping at the manual gate', function () {
+    File::put($this->corpus, "acme/eras\n");
+
+    $this->artisan('analyse:batch', ['file' => $this->corpus, '--screen' => true])
+        ->expectsOutputToContain('Answer the manual criteria')
+        ->assertSuccessful();
+
+    // Screened but not mined: the gate is between screening and the pipeline.
+    expect(Candidate::where('full_name', 'acme/eras')->exists())->toBeTrue()
+        ->and(Snapshot::count())->toBe(0)
+        ->and(TestObservation::count())->toBe(0);
 });
 
 it('fails on a missing or empty corpus file', function () {

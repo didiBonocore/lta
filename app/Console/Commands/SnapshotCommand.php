@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Analysis\Versioning\LaravelMajorResolver;
+use App\Analysis\Versioning\TrunkMajorWalk;
 use App\Models\ParseFailure;
 use App\Models\Repository;
 use App\Models\Snapshot;
 use App\Models\TestObservation;
 use App\Models\UnroutableFile;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Process;
 
 /**
  * Stage 1 / Instrument A — reconstruct integer-major Laravel checkpoints from composer.json
@@ -36,7 +35,7 @@ class SnapshotCommand extends Command
 
     protected $description = 'Mine composer.json trunk history to build version-boundary snapshots (integer majors)';
 
-    public function handle(LaravelMajorResolver $resolver): int
+    public function handle(TrunkMajorWalk $walk): int
     {
         $repository = Repository::where('full_name', $this->argument('full_name'))->first();
         if ($repository === null) {
@@ -52,28 +51,24 @@ class SnapshotCommand extends Command
             return self::FAILURE;
         }
 
-        $touches = $this->composerTouches($root, $resolver);
-        if ($touches === []) {
+        // Last touching commit per major = the mature state before the upgrade. An
+        // oscillation (9 → 10 → 9 on trunk) is deliberately NOT special-cased: the last
+        // trunk commit resolving to 9 then sits after the 10 period, and analyse:verify
+        // reports it — a real property of the project, unlike a branch artefact.
+        // TrunkMajorWalk is shared with analyse:screen so the corpus is defined and
+        // measured by one rule.
+        $representatives = $walk->representatives($root, fn (string $reason) => $this->warn($reason));
+        if ($representatives === []) {
             $this->error('No composer.json commit on the first-parent line resolves to a Laravel major — cannot snapshot.');
 
             return self::FAILURE;
         }
 
-        // Last touching commit per major = the mature state before the upgrade. An
-        // oscillation (9 → 10 → 9 on trunk) is deliberately NOT special-cased: the last
-        // trunk commit resolving to 9 then sits after the 10 period, and analyse:verify
-        // reports it — a real property of the project, unlike a branch artefact.
-        $representatives = [];
-        foreach ($touches as $touch) {
-            $representatives[$touch['major']] = $touch;
-        }
-        ksort($representatives);
-
         // Pathspec simplification guard: the constraint the walk parsed must equal the
         // constraint in the commit's tree. If they disagree, the traversal is wrong and no
         // downstream correctness rescues it.
         foreach ($representatives as $major => $touch) {
-            $inTree = $this->constraintAt($root, $touch['sha']);
+            $inTree = $walk->constraintAt($root, $touch['sha']);
             if ($inTree !== $touch['constraint']) {
                 $this->error(sprintf(
                     'Traversal mismatch at %s (major %d): walk parsed "%s" but the tree holds "%s".',
@@ -107,75 +102,6 @@ class SnapshotCommand extends Command
         $this->table(['Laravel major', 'representative commit', 'author date', 'trunk index'], $created);
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Every composer.json-touching commit on the first-parent line that resolves to a
-     * Laravel major, oldest first. The index is the commit's position in that walk, recorded
-     * so major ordering can be checked against trunk position rather than author date.
-     *
-     * @return list<array{sha: string, date: string, major: int, constraint: string, index: int}>
-     */
-    private function composerTouches(string $root, LaravelMajorResolver $resolver): array
-    {
-        $log = Process::path($root)
-            ->run(['git', 'log', '--first-parent', '--follow', '--reverse', '--format=%H %aI', '--', 'composer.json'])
-            ->throw()
-            ->output();
-
-        $touches = [];
-        $index = 0;
-        foreach (array_filter(explode("\n", trim($log))) as $line) {
-            [$sha, $date] = explode(' ', trim($line), 2);
-            $walkIndex = $index++;
-
-            $constraint = $this->constraintAt($root, $sha);
-            if ($constraint === null) {
-                $this->warn("Skipping {$sha}: composer.json absent or framework constraint missing.");
-
-                continue;
-            }
-
-            $major = $resolver->resolve($constraint);
-            if ($major === null) {
-                $this->warn("Skipping {$sha}: framework constraint \"{$constraint}\" unparseable.");
-
-                continue;
-            }
-
-            $touches[] = [
-                'sha' => $sha,
-                'date' => $date,
-                'major' => $major,
-                'constraint' => $constraint,
-                'index' => $walkIndex,
-            ];
-        }
-
-        return $touches;
-    }
-
-    /**
-     * The raw laravel/framework (fallback illuminate/support) constraint in composer.json at
-     * a commit, read from the tree via `git show`; null where the file or constraint is absent.
-     */
-    private function constraintAt(string $root, string $sha): ?string
-    {
-        $shown = Process::path($root)->run(['git', 'show', "{$sha}:composer.json"]);
-        if (! $shown->successful()) {
-            return null; // composer.json absent at this commit (e.g. the rename source)
-        }
-
-        $composer = json_decode($shown->output(), true);
-        if (! is_array($composer) || ! is_array($composer['require'] ?? null)) {
-            return null;
-        }
-
-        $constraint = $composer['require']['laravel/framework']
-            ?? $composer['require']['illuminate/support']
-            ?? null;
-
-        return is_string($constraint) ? $constraint : null;
     }
 
     /**

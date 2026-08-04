@@ -17,6 +17,12 @@ it('full-clones a new repository and records provenance with GitHub metadata', f
         'api.github.com/repos/acme/shop' => Http::response([
             'license' => ['spdx_id' => 'MIT'],
             'created_at' => '2019-03-04T12:00:00Z',
+            'stargazers_count' => 1200,
+            'subscribers_count' => 45,
+            'forks_count' => 310,
+            'archived' => false,
+            'fork' => true,
+            'parent' => ['full_name' => 'acme/original'],
         ]),
     ]);
 
@@ -31,7 +37,14 @@ it('full-clones a new repository and records provenance with GitHub metadata', f
         ->and($repository->head_sha)->toBe('abc123def456')
         ->and($repository->license)->toBe('MIT')
         ->and($repository->github_created_at->toDateString())->toBe('2019-03-04')
-        ->and($repository->cloned_at)->not->toBeNull();
+        ->and($repository->cloned_at)->not->toBeNull()
+        // Descriptive characteristics (Appendix A) — recorded, never filtered on.
+        ->and($repository->stars)->toBe(1200)
+        ->and($repository->watchers)->toBe(45)
+        ->and($repository->forks)->toBe(310)
+        ->and($repository->archived)->toBeFalse()
+        ->and($repository->is_fork)->toBeTrue()
+        ->and($repository->fork_parent)->toBe('acme/original');
 });
 
 it('records the default branch HEAD points at', function () {

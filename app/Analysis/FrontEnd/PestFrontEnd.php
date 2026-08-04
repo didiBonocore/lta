@@ -28,13 +28,9 @@ final class PestFrontEnd extends AbstractFrontEnd
         return FrontEndKind::Pest;
     }
 
-    public function parse(string $path, string $source): ?TestFileRecord
+    /** @param Node[] $ast */
+    public function parseStatements(string $path, array $ast): TestFileRecord
     {
-        $ast = $this->parser->parse($source);
-        if ($ast === null) {
-            return null;
-        }
-
         $traits = $this->fileLevelTraits($ast);
         // In Pest, the effective base class is the app TestCase bound in Pest.php; we record
         // it as "Pest\TestCase" unless a uses(SomethingTestCase::class) overrides it.
@@ -68,7 +64,7 @@ final class PestFrontEnd extends AbstractFrontEnd
     /**
      * Resolve uses(A::class, B::class) at file level into trait/base simple-names.
      *
-     * @param  Node\Stmt[]  $ast
+     * @param  Node[]  $ast
      * @return list<string>
      */
     private function fileLevelTraits(array $ast): array

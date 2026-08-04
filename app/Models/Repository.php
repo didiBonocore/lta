@@ -20,6 +20,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $github_created_at
  * @property Carbon|null $cloned_at
  * @property string|null $primary_test_framework
+ * @property string|null $default_branch
+ * @property int|null $stars
+ * @property int|null $watchers
+ * @property int|null $forks
+ * @property bool|null $archived
+ * @property bool|null $is_fork
+ * @property string|null $fork_parent
  */
 class Repository extends Model
 {
@@ -28,6 +35,8 @@ class Repository extends Model
     protected $casts = [
         'github_created_at' => 'date',
         'cloned_at' => 'datetime',
+        'archived' => 'boolean',
+        'is_fork' => 'boolean',
     ];
 
     /** @return HasMany<Snapshot, $this> */

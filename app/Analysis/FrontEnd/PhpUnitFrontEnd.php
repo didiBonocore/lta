@@ -24,13 +24,9 @@ final class PhpUnitFrontEnd extends AbstractFrontEnd
         return FrontEndKind::PhpUnit;
     }
 
-    public function parse(string $path, string $source): ?TestFileRecord
+    /** @param Node[] $ast */
+    public function parseStatements(string $path, array $ast): ?TestFileRecord
     {
-        $ast = $this->parser->parse($source);
-        if ($ast === null) {
-            return null;
-        }
-
         $finder = new NodeFinder;
         /** @var Class_|null $class */
         $class = $finder->findFirst($ast, static fn (Node $n): bool => $n instanceof Class_ && $n->extends !== null);
