@@ -140,6 +140,41 @@ it('rejects a manual judgement without a reason or without a screened row', func
     $repo->destroy();
 });
 
+it('records a failed dependency criterion when composer.json is missing, rather than throwing', function () {
+    $repo = GitFixtureRepo::init(base_path('storage/framework/testing/no-manifest-repo'));
+    $repo->write('tests/Unit/AlphaTest.php', GitFixtureRepo::phpUnitTestClass('AlphaTest', 'test_alpha'));
+    $repo->commit('a suite but no root manifest', '2022-01-10T10:00:00Z');
+
+    Repository::create([
+        'full_name' => 'acme/no-manifest',
+        'owner' => 'acme',
+        'name' => 'no-manifest',
+        'url' => 'https://github.com/acme/no-manifest.git',
+        'clone_path' => $repo->root,
+        'head_sha' => $repo->head(),
+        'is_fork' => false,
+    ]);
+
+    // Screening never raises: a candidate that threw would have no row and be silently
+    // absent from the quartile pool and the published decision log.
+    $this->artisan('analyse:screen', ['full_name' => 'acme/no-manifest'])->assertSuccessful();
+
+    $candidate = Candidate::sole();
+    expect($candidate->dependency_ok)->toBe('fail')
+        ->and($candidate->framework_constraint)->toBe('(composer.json missing or unreadable at the clone root)')
+        ->and($candidate->package_ok)->toBe('fail')
+        ->and($candidate->screening_notes)->toContain('composer.json missing or unreadable')
+        // The walk itself evaluates fine: zero composer.json touches means zero majors.
+        ->and($candidate->majors_ok)->toBe('fail')
+        ->and($candidate->majors_count)->toBe(0)
+        // The suite still routes and the proportions are still measured.
+        ->and($candidate->suite_ok)->toBe('pass')
+        ->and($candidate->test_file_proportion)->toBe(1.0)
+        ->and($candidate->verdict)->toBe('pending');
+
+    $repo->destroy();
+});
+
 it('fails to screen a candidate that was never acquired', function () {
     $this->artisan('analyse:screen', ['full_name' => 'acme/unacquired'])->assertFailed();
     expect(Candidate::count())->toBe(0);

@@ -1,0 +1,73 @@
+# lta corpus candidates — compiled 2026-08-04
+#
+# Comments must be on their OWN LINE. Trailing comments after a slug are not
+# stripped and will be treated as part of the repository name.
+#
+# Inclusion here is a proposal, not a decision. analyse:screen adjudicates.
+# Rejections are decision-log entries, not wasted effort.
+
+# ── already acquired (pilot) ──
+grokability/snipe-it
+InvoiceShelf/InvoiceShelf
+
+# ── long-lived Laravel applications, high confidence ──
+firefly-iii/firefly-iii
+monicahq/monica
+koel/koel
+akaunting/akaunting
+bagisto/bagisto
+laravelio/laravel.io
+pixelfed/pixelfed
+pterodactyl/panel
+LycheeOrg/Lychee
+Kovah/LinkAce
+phpvms/phpvms
+realodix/urlhub
+krayin/laravel-crm
+faveosuite/faveo-helpdesk
+Attendize/Attendize
+TypiCMS/TypiCMS
+
+# eveseat/seat is bundle-shaped: most logic lives in eveseat/web, eveseat/eveapi
+eveseat/seat
+
+# ── CMS platforms: application, or framework-adjacent? manual call ──
+# october and winter SHARE HISTORY — winter is a hard fork. Pick one.
+octobercms/october
+wintercms/winter
+microweber/microweber
+pyrocms/pyrocms
+LavaLite/cms
+AsgardCms/Platform
+tastyigniter/TastyIgniter
+
+# ── shares history with InvoiceShelf — pick one of the pair ──
+crater-invoice-inc/crater
+
+# ── partial-Laravel or partial-history; screening decides ──
+# invoiceninja default branch is v5-stable, so v4 history may be unreachable
+invoiceninja/invoiceninja
+# freescout default branch is `dist` and holds built artifacts
+freescout-help-desk/freescout
+# bookstack may now be a Codeberg mirror — confirm the canonical remote
+BookStackApp/BookStack
+librenms/librenms
+ushahidi/platform
+aimeos/aimeos
+avored/laravel-ecommerce
+coollabsio/coolify
+gitscrum-core/laravel-gitscrum
+cydrobolt/polr
+CoasterCms/coastercms
+
+# ── newer, but Laravel's annual majors make three reachable ──
+# 9=Feb 2022, 10=Feb 2023, 11=Mar 2024, 12=Feb 2025, 13=2026
+OpnForm/OpnForm
+fresns/fresns
+paymenter/paymenter
+iceburgcrm/iceburgcrm
+vitodeploy/vito
+lakasir/lakasir
+cattr-app/server-application
+aureuserp/aureuserp
+unopim/unopim
