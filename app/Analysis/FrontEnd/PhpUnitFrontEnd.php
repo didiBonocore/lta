@@ -24,13 +24,6 @@ final class PhpUnitFrontEnd extends AbstractFrontEnd
         return FrontEndKind::PhpUnit;
     }
 
-    public function handles(string $source): bool
-    {
-        // Owns files that declare a class extending something ending in TestCase, and that
-        // are NOT Pest closure files (no top-level it()/test() — Pest front-end owns those).
-        return preg_match('/class\s+\w+\s+extends\s+\w*TestCase/', $source) === 1;
-    }
-
     public function parse(string $path, string $source): ?TestFileRecord
     {
         $ast = $this->parser->parse($source);

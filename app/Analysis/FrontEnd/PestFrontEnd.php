@@ -28,13 +28,6 @@ final class PestFrontEnd extends AbstractFrontEnd
         return FrontEndKind::Pest;
     }
 
-    public function handles(string $source): bool
-    {
-        // Owns files with top-level it(...) / test(...) and no class declaration.
-        return preg_match('/^\s*(it|test)\s*\(/m', $source) === 1
-            && preg_match('/^\s*class\s+/m', $source) !== 1;
-    }
-
     public function parse(string $path, string $source): ?TestFileRecord
     {
         $ast = $this->parser->parse($source);

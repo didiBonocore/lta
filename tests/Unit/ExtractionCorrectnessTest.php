@@ -117,6 +117,31 @@ it('counts negation, conjunction and higher-order modifiers to their hand-comput
         ->and($m->mockAssertionRatio)->toBe(0.0);
 })->group('fixtures');
 
+it('extracts a Pest file with an inline double to two records, the double contributing none', function () {
+    $file = parseFixture('Pest/InlineDoubleExample.php');
+
+    expect($file->methods)->toHaveCount(2)
+        ->and($file->methods[0]->identifier)->toBe('drives with the fake')
+        ->and($file->methods[0]->testAssertionCount)->toBe(1)
+        ->and($file->methods[1]->identifier)->toBe('reports readiness')
+        ->and($file->methods[1]->testAssertionCount)->toBe(1)
+        ->and($file->methods[0]->mockAssertionCount)->toBe(0)
+        ->and($file->methods[1]->mockAssertionCount)->toBe(0);
+})->group('fixtures');
+
+it('produces identical records for identical bodies under qualified, fully-qualified and aliased parents', function () {
+    $qualified = parseFixture('PhpUnit/QualifiedParentExample.php')->methods[0];
+    $fullyQualified = parseFixture('PhpUnit/FullyQualifiedParentExample.php')->methods[0];
+    $aliased = parseFixture('PhpUnit/AliasedParentExample.php')->methods[0];
+
+    foreach ([$fullyQualified, $aliased] as $twin) {
+        expect($twin->identifier)->toBe($qualified->identifier)
+            ->and($twin->testAssertionCount)->toBe($qualified->testAssertionCount)->toBe(2)
+            ->and($twin->mockAssertionCount)->toBe($qualified->mockAssertionCount)->toBe(0)
+            ->and($twin->type)->toBe($qualified->type);
+    }
+})->group('fixtures');
+
 it('counts closure-form grouping expectations to their hand-computed values', function () {
     $m = parseFixture('Pest/HigherOrderExpectationExample.php')->methods[0];
 

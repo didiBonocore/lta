@@ -10,7 +10,7 @@ use App\Analysis\Tree\SourceTree;
  * Locates a mined repository's test files the way its own runner would: from the
  * testsuite directories declared in phpunit.xml[.dist] (Pest reads the same file), falling
  * back to a conventional tests/ directory. Only discovery lives here — routing a file to a
- * front-end is done by FrontEnd::handles() on content, never on path.
+ * front-end is done by FrontEndRouter on the parse tree, never on path.
  */
 final class SuiteDiscovery
 {
