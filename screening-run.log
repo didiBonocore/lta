@@ -1,0 +1,923 @@
+
+   INFO  ▶ grokability/snipe-it.  
+
+Already cloned: /Users/eugeniabonocore/Herd/lta/storage/corpus/grokability__snipe-it
+Acquired grokability/snipe-it @ 5fa652223b4779789888d8e1500e2dd24e624a38 (default branch: master)
+Screened grokability/snipe-it (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                          |
+| >= 3 Laravel majors on trunk           | pass    | 6 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 414 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 26.66% (414 of 1553 files)     |
+| test LOC proportion (pool-relative)    | pending | 30.46% (56001 of 183840 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ InvoiceShelf/InvoiceShelf.  
+
+Already cloned: /Users/eugeniabonocore/Herd/lta/storage/corpus/InvoiceShelf__InvoiceShelf
+Acquired InvoiceShelf/InvoiceShelf @ d0391b9cfcaac3f5baeb2c1b16053aca8adfbc73 (default branch: 3.x)
+Screened InvoiceShelf/InvoiceShelf (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^13.0                        |
+| >= 3 Laravel majors on trunk           | pass    | 6 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 97 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 12.71% (98 of 771 files)     |
+| test LOC proportion (pool-relative)    | pending | 10.07% (8809 of 87438 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ firefly-iii/firefly-iii.  
+
+[?25l [36m⠶[39m Cloning firefly-iii/firefly-iii (full history)…
+[999D[1A[J[?25hAcquired firefly-iii/firefly-iii @ 9574652bf7e85c6d91c94462df3737217a961fb7 (default branch: main)
+Screened firefly-iii/firefly-iii (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^13                          |
+| >= 3 Laravel majors on trunk           | pass    | 10 majors                    |
+| PHPUnit or Pest suite at HEAD          | pass    | 37 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 2.84% (38 of 1336 files)     |
+| test LOC proportion (pool-relative)    | pending | 2.09% (3762 of 180177 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ monicahq/monica.  
+
+[?25l [36m⠶[39m Cloning monicahq/monica (full history)…
+[999D[1A[J[?25hAcquired monicahq/monica @ e08e91734170b6bbd582cb578532c3948196124e (default branch: main)
+Screened monicahq/monica (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                          |
+| >= 3 Laravel majors on trunk           | pass    | 5 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 507 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 35.21% (507 of 1440 files)     |
+| test LOC proportion (pool-relative)    | pending | 43.75% (52163 of 119239 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ koel/koel.  
+
+[?25l [36m⠶[39m Cloning koel/koel (full history)…
+[999D[1A[J[?25hAcquired koel/koel @ d1a5f3d0ef229bf1d0ceb7586c5c81da5eb4c287 (default branch: master)
+Screened koel/koel (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-------------------------------+
+| criterion                              | outcome | measured                      |
++----------------------------------------+---------+-------------------------------+
+| laravel/framework direct dependency    | pass    | ^13.0                         |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                      |
+| PHPUnit or Pest suite at HEAD          | pass    | 313 files route               |
+| history fully cloneable                | pass    | full clone acquired           |
+| not framework core or package          | pass    | type: project                 |
+| not a fork without independent history | pass    | not a fork                    |
+| test file proportion (pool-relative)   | pending | 22.55% (313 of 1388 files)    |
+| test LOC proportion (pool-relative)    | pending | 38.86% (28453 of 73227 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                  |
++----------------------------------------+---------+-------------------------------+
+
+   INFO  ▶ akaunting/akaunting.  
+
+[?25l [36m⠶[39m Cloning akaunting/akaunting (full history)…
+[999D[1A[J[?25hAcquired akaunting/akaunting @ 4aec5fc963f708294835d631f89b48363c5a5814 (default branch: master)
+Screened akaunting/akaunting (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^10.0                        |
+| >= 3 Laravel majors on trunk           | pass    | 6 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 34 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 2.80% (34 of 1213 files)     |
+| test LOC proportion (pool-relative)    | pending | 4.12% (4361 of 105784 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ bagisto/bagisto.  
+
+[?25l [36m⠶[39m Cloning bagisto/bagisto (full history)…
+[999D[1A[J[?25hAcquired bagisto/bagisto @ 95872d4c101b1e6ea138780a73972ca25b314793 (default branch: 2.4)
+Screened bagisto/bagisto (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                          |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 84 files route                 |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 5.12% (84 of 1641 files)       |
+| test LOC proportion (pool-relative)    | pending | 31.48% (56468 of 179386 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ laravelio/laravel.io.  
+
+[?25l [36m⠶[39m Cloning laravelio/laravel.io (full history)…
+[999D[1A[J[?25hAcquired laravelio/laravel.io @ 92d6529dcb94fca6c4ba8da1f7a398fcc31ebc35 (default branch: main)
+Screened laravelio/laravel.io (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^11.5                        |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 67 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 21.00% (67 of 319 files)     |
+| test LOC proportion (pool-relative)    | pending | 30.65% (5112 of 16677 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ pixelfed/pixelfed.  
+
+[?25l [36m⠶[39m Cloning pixelfed/pixelfed (full history)…
+[999D[1A[J[?25hAcquired pixelfed/pixelfed @ c8bed78bee3d796c5efb57393dafafbba3706f38 (default branch: dev)
+Screened pixelfed/pixelfed (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                        |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 22 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 2.13% (22 of 1034 files)     |
+| test LOC proportion (pool-relative)    | pending | 1.73% (1809 of 104850 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ pterodactyl/panel.  
+
+[?25l [36m⠶[39m Cloning pterodactyl/panel (full history)…
+[999D[1A[J[?25hAcquired pterodactyl/panel @ 97ed7f20424c711e1e29d0acc296f1ee41783986 (default branch: 1.0-develop)
+Screened pterodactyl/panel (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.60.0                     |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 77 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: (absent)               |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 8.45% (77 of 911 files)      |
+| test LOC proportion (pool-relative)    | pending | 17.28% (9117 of 52774 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ LycheeOrg/Lychee.  
+
+[?25l [36m⠶[39m Cloning LycheeOrg/Lychee (full history)…
+[999D[1A[J[?25hAcquired LycheeOrg/Lychee @ 30aeba5f3b4477de6be4a5cf86c3b443e8da3767 (default branch: master)
+Screened LycheeOrg/Lychee (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                          |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 134 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 17.35% (417 of 2404 files)     |
+| test LOC proportion (pool-relative)    | pending | 32.54% (68088 of 209256 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ Kovah/LinkAce.  
+
+[?25l [36m⠶[39m Cloning Kovah/LinkAce (full history)…
+[999D[1A[J[?25hAcquired Kovah/LinkAce @ 049702ba0aae0c57fe1f319a4567cff7115e7992 (default branch: 2.x)
+Screened Kovah/LinkAce (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-------------------------------+
+| criterion                              | outcome | measured                      |
++----------------------------------------+---------+-------------------------------+
+| laravel/framework direct dependency    | pass    | ^v11.48                       |
+| >= 3 Laravel majors on trunk           | pass    | 7 majors                      |
+| PHPUnit or Pest suite at HEAD          | pass    | 94 files route                |
+| history fully cloneable                | pass    | full clone acquired           |
+| not framework core or package          | pass    | type: project                 |
+| not a fork without independent history | pass    | not a fork                    |
+| test file proportion (pool-relative)   | pending | 25.41% (94 of 370 files)      |
+| test LOC proportion (pool-relative)    | pending | 42.11% (12603 of 29932 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                  |
++----------------------------------------+---------+-------------------------------+
+
+   INFO  ▶ phpvms/phpvms.  
+
+[?25l [36m⠶[39m Cloning phpvms/phpvms (full history)…
+[999D[1A[J[?25hAcquired phpvms/phpvms @ 509b1f1e8f9213a5562165709bc80ea609c32bf2 (default branch: main)
+Screened phpvms/phpvms (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^v13.9                         |
+| >= 3 Laravel majors on trunk           | pass    | 9 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 190 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 17.57% (194 of 1104 files)     |
+| test LOC proportion (pool-relative)    | pending | 23.21% (25346 of 109194 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ realodix/urlhub.  
+
+[?25l [36m⠶[39m Cloning realodix/urlhub (full history)…
+[999D[1A[J[?25hAcquired realodix/urlhub @ 044bc148ab4763b8a9e6597f8fad7f1eed76ff76 (default branch: master)
+Screened realodix/urlhub (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^13.12                       |
+| >= 3 Laravel majors on trunk           | pass    | 9 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 48 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 36.36% (48 of 132 files)     |
+| test LOC proportion (pool-relative)    | pending | 53.96% (6354 of 11776 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ krayin/laravel-crm.  
+
+[?25l [36m⠶[39m Cloning krayin/laravel-crm (full history)…
+[999D[1A[J[?25hAcquired krayin/laravel-crm @ 4aa95a1d32610bded2f7e6732520e5e78555a754 (default branch: 2.2)
+Screened krayin/laravel-crm (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+---------------------------+
+| criterion                              | outcome | measured                  |
++----------------------------------------+---------+---------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                     |
+| >= 3 Laravel majors on trunk           | pass    | 4 majors                  |
+| PHPUnit or Pest suite at HEAD          | pass    | 3 files route             |
+| history fully cloneable                | pass    | full clone acquired       |
+| not framework core or package          | pass    | type: project             |
+| not a fork without independent history | pass    | not a fork                |
+| test file proportion (pool-relative)   | pending | 0.49% (3 of 618 files)    |
+| test LOC proportion (pool-relative)    | pending | 0.11% (51 of 46860 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)              |
++----------------------------------------+---------+---------------------------+
+
+   INFO  ▶ faveosuite/faveo-helpdesk.  
+
+[?25l [36m⠶[39m Cloning faveosuite/faveo-helpdesk (full history)…
+[999D[1A[J[?25hAcquired faveosuite/faveo-helpdesk @ 6568aa45f89b78028b05cddfb2d37c171d2fbab1 (default branch: development)
+Screened faveosuite/faveo-helpdesk (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+----------------------------+
+| criterion                              | outcome | measured                   |
++----------------------------------------+---------+----------------------------+
+| laravel/framework direct dependency    | pass    | ^9.46                      |
+| >= 3 Laravel majors on trunk           | fail    | 1 majors                   |
+| PHPUnit or Pest suite at HEAD          | pass    | 5 files route              |
+| history fully cloneable                | pass    | full clone acquired        |
+| not framework core or package          | pass    | type: project              |
+| not a fork without independent history | pass    | not a fork                 |
+| test file proportion (pool-relative)   | pending | 0.98% (5 of 510 files)     |
+| test LOC proportion (pool-relative)    | pending | 1.76% (867 of 49200 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)               |
++----------------------------------------+---------+----------------------------+
+
+   INFO  ▶ Attendize/Attendize.  
+
+[?25l [36m⠶[39m Cloning Attendize/Attendize (full history)…
+[999D[1A[J[?25hAcquired Attendize/Attendize @ 9289acbab1583898fd85aeee66c7b613d8971deb (default branch: develop)
+Screened Attendize/Attendize (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+----------------------------+
+| criterion                              | outcome | measured                   |
++----------------------------------------+---------+----------------------------+
+| laravel/framework direct dependency    | pass    | ^6.5                       |
+| >= 3 Laravel majors on trunk           | fail    | 2 majors                   |
+| PHPUnit or Pest suite at HEAD          | pass    | 3 files route              |
+| history fully cloneable                | pass    | full clone acquired        |
+| not framework core or package          | pass    | type: project              |
+| not a fork without independent history | pass    | not a fork                 |
+| test file proportion (pool-relative)   | pending | 1.17% (3 of 257 files)     |
+| test LOC proportion (pool-relative)    | pending | 2.76% (596 of 21571 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)               |
++----------------------------------------+---------+----------------------------+
+
+   INFO  ▶ TypiCMS/TypiCMS.  
+
+[?25l [36m⠶[39m Cloning TypiCMS/TypiCMS (full history)…
+[999D[1A[J[?25hAcquired TypiCMS/TypiCMS @ 971f484ff0b69d4d860ed8fbab855d0fa8eb92bd (default branch: main)
+Screened TypiCMS/TypiCMS (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-------------------------+
+| criterion                              | outcome | measured                |
++----------------------------------------+---------+-------------------------+
+| laravel/framework direct dependency    | pass    | ^13.0                   |
+| >= 3 Laravel majors on trunk           | pass    | 9 majors                |
+| PHPUnit or Pest suite at HEAD          | fail    | 0 files route           |
+| history fully cloneable                | pass    | full clone acquired     |
+| not framework core or package          | pass    | type: project           |
+| not a fork without independent history | pass    | not a fork              |
+| test file proportion (pool-relative)   | pending | 0.00% (0 of 27 files)   |
+| test LOC proportion (pool-relative)    | pending | 0.00% (0 of 2409 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)            |
++----------------------------------------+---------+-------------------------+
+
+   INFO  ▶ eveseat/seat.  
+
+[?25l [36m⠶[39m Cloning eveseat/seat (full history)…
+[999D[1A[J[?25hAcquired eveseat/seat @ 9f390b03aafeace3f40a6a654cc2126a666cedef (default branch: master)
+Screened eveseat/seat (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-------------------------+
+| criterion                              | outcome | measured                |
++----------------------------------------+---------+-------------------------+
+| laravel/framework direct dependency    | pass    | ^10.0                   |
+| >= 3 Laravel majors on trunk           | pass    | 6 majors                |
+| PHPUnit or Pest suite at HEAD          | fail    | 0 files route           |
+| history fully cloneable                | pass    | full clone acquired     |
+| not framework core or package          | pass    | type: project           |
+| not a fork without independent history | pass    | not a fork              |
+| test file proportion (pool-relative)   | pending | 0.00% (0 of 32 files)   |
+| test LOC proportion (pool-relative)    | pending | 0.00% (0 of 1955 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)            |
++----------------------------------------+---------+-------------------------+
+
+   INFO  ▶ octobercms/october.  
+
+[?25l [36m⠶[39m Cloning octobercms/october (full history)…
+[999D[1A[J[?25hAcquired octobercms/october @ c1876c7920bea010e4a742062a97c3ad0e9b293e (default branch: 4.x)
+Screened octobercms/october (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+---------------------------+
+| criterion                              | outcome | measured                  |
++----------------------------------------+---------+---------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                     |
+| >= 3 Laravel majors on trunk           | pass    | 5 majors                  |
+| PHPUnit or Pest suite at HEAD          | fail    | 0 files route             |
+| history fully cloneable                | pass    | full clone acquired       |
+| not framework core or package          | pass    | type: project             |
+| not a fork without independent history | pass    | not a fork                |
+| test file proportion (pool-relative)   | pending | 0.00% (0 of 1355 files)   |
+| test LOC proportion (pool-relative)    | pending | 0.00% (0 of 147421 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)              |
++----------------------------------------+---------+---------------------------+
+
+   INFO  ▶ wintercms/winter.  
+
+[?25l [36m⠶[39m Cloning wintercms/winter (full history)…
+[999D[1A[J[?25hAcquired wintercms/winter @ e3300ce2822ec8e020e3b60feab7d9e7aa3e47cc (default branch: develop)
+Screened wintercms/winter (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^9.1                           |
+| >= 3 Laravel majors on trunk           | pass    | 4 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 94 files route                 |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 10.48% (96 of 916 files)       |
+| test LOC proportion (pool-relative)    | pending | 15.82% (15900 of 100476 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+Shares history with octobercms/october (diverged at 24d95a208bf4a0840d7b631a87ad1ce3fb4a5ed3) — both flagged for the manual gate.
+
+   INFO  ▶ microweber/microweber.  
+
+[?25l [36m⠶[39m Cloning microweber/microweber (full history)…
+[999D[1A[J[?25hAcquired microweber/microweber @ 51ac7113f29aef8ad51e27837aa45c788aa5c041 (default branch: master)
+Screened microweber/microweber (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | v10.21.*                     |
+| >= 3 Laravel majors on trunk           | pass    | 6 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 11 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: application            |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 0.37% (12 of 3234 files)     |
+| test LOC proportion (pool-relative)    | pending | 0.30% (1026 of 345450 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ pyrocms/pyrocms.  
+
+[?25l [36m⠶[39m Cloning pyrocms/pyrocms (full history)…
+[999D[1A[J[?25hAcquired pyrocms/pyrocms @ 8d8851775b9546083c95fd19d15c3cc9efcb3692 (default branch: 3.10)
+Screened pyrocms/pyrocms (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-------------------------+
+| criterion                              | outcome | measured                |
++----------------------------------------+---------+-------------------------+
+| laravel/framework direct dependency    | fail    |                         |
+| >= 3 Laravel majors on trunk           | fail    | 2 majors                |
+| PHPUnit or Pest suite at HEAD          | fail    | 0 files route           |
+| history fully cloneable                | pass    | full clone acquired     |
+| not framework core or package          | pass    | type: project           |
+| not a fork without independent history | pass    | not a fork              |
+| test file proportion (pool-relative)   | pending | 0.00% (0 of 37 files)   |
+| test LOC proportion (pool-relative)    | pending | 0.00% (0 of 2285 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)            |
++----------------------------------------+---------+-------------------------+
+
+   INFO  ▶ LavaLite/cms.  
+
+[?25l [36m⠶[39m Cloning LavaLite/cms (full history)…
+[999D[1A[J[?25hAcquired LavaLite/cms @ 6b281860c480035b54d0a33eb686cf9977b0f634 (default branch: master)
+Screened LavaLite/cms (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------+
+| criterion                              | outcome | measured                 |
++----------------------------------------+---------+--------------------------+
+| laravel/framework direct dependency    | pass    | ^10.14                   |
+| >= 3 Laravel majors on trunk           | pass    | 6 majors                 |
+| PHPUnit or Pest suite at HEAD          | pass    | 2 files route            |
+| history fully cloneable                | pass    | full clone acquired      |
+| not framework core or package          | pass    | type: cms                |
+| not a fork without independent history | pass    | not a fork               |
+| test file proportion (pool-relative)   | pending | 2.60% (2 of 77 files)    |
+| test LOC proportion (pool-relative)    | pending | 0.81% (35 of 4297 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)             |
++----------------------------------------+---------+--------------------------+
+
+   INFO  ▶ AsgardCms/Platform.  
+
+[?25l [36m⠶[39m Cloning AsgardCms/Platform (full history)…
+[999D[1A[J[?25hAcquired AsgardCms/Platform @ f741bc2d9c30a86c844b3009859f7f6d341c98d4 (default branch: master)
+Screened AsgardCms/Platform (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^8.13                        |
+| >= 3 Laravel majors on trunk           | pass    | 3 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 37 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 6.54% (46 of 703 files)      |
+| test LOC proportion (pool-relative)    | pending | 14.95% (6227 of 41661 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ tastyigniter/TastyIgniter.  
+
+[?25l [36m⠶[39m Cloning tastyigniter/TastyIgniter (full history)…
+[999D[1A[J[?25hAcquired tastyigniter/TastyIgniter @ 57f58734810bf109c60ccc3a37a4737a97c9e35f (default branch: 4.x)
+Screened tastyigniter/TastyIgniter (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------+
+| criterion                              | outcome | measured                 |
++----------------------------------------+---------+--------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                    |
+| >= 3 Laravel majors on trunk           | pass    | 5 majors                 |
+| PHPUnit or Pest suite at HEAD          | pass    | 2 files route            |
+| history fully cloneable                | pass    | full clone acquired      |
+| not framework core or package          | pass    | type: project            |
+| not a fork without independent history | pass    | not a fork               |
+| test file proportion (pool-relative)   | pending | 4.08% (2 of 49 files)    |
+| test LOC proportion (pool-relative)    | pending | 1.55% (39 of 2518 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)             |
++----------------------------------------+---------+--------------------------+
+
+   INFO  ▶ crater-invoice-inc/crater.  
+
+[?25l [36m⠶[39m Cloning crater-invoice-inc/crater (full history)…
+[999D[1A[J[?25hAcquired crater-invoice-inc/crater @ 05d5ce26fdd8d9466009163444e944259bc0cc2a (default branch: master)
+Screened crater-invoice-inc/crater (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-----------------------------+
+| criterion                              | outcome | measured                    |
++----------------------------------------+---------+-----------------------------+
+| laravel/framework direct dependency    | pass    | ^8.0                        |
+| >= 3 Laravel majors on trunk           | fail    | 2 majors                    |
+| PHPUnit or Pest suite at HEAD          | pass    | 52 files route              |
+| history fully cloneable                | pass    | full clone acquired         |
+| not framework core or package          | pass    | type: project               |
+| not a fork without independent history | pass    | not a fork                  |
+| test file proportion (pool-relative)   | pending | 8.04% (53 of 659 files)     |
+| test LOC proportion (pool-relative)    | pending | 7.79% (4372 of 56117 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                |
++----------------------------------------+---------+-----------------------------+
+Shares history with InvoiceShelf/InvoiceShelf (diverged at 05d5ce26fdd8d9466009163444e944259bc0cc2a) — both flagged for the manual gate.
+
+   INFO  ▶ invoiceninja/invoiceninja.  
+
+[?25l [36m⠶[39m Cloning invoiceninja/invoiceninja (full history)…
+[999D[1A[J[?25hAcquired invoiceninja/invoiceninja @ 9f8bc547af68cefe5654367614ce8e8223a30755 (default branch: v5-stable)
+Screened invoiceninja/invoiceninja (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+---------------------------------+
+| criterion                              | outcome | measured                        |
++----------------------------------------+---------+---------------------------------+
+| laravel/framework direct dependency    | pass    | ^12                             |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                        |
+| PHPUnit or Pest suite at HEAD          | pass    | 435 files route                 |
+| history fully cloneable                | pass    | full clone acquired             |
+| not framework core or package          | pass    | type: project                   |
+| not a fork without independent history | pass    | not a fork                      |
+| test file proportion (pool-relative)   | pending | 13.21% (435 of 3292 files)      |
+| test LOC proportion (pool-relative)    | pending | 22.66% (164638 of 726529 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                    |
++----------------------------------------+---------+---------------------------------+
+
+   INFO  ▶ freescout-help-desk/freescout.  
+
+[?25l [36m⠶[39m Cloning freescout-help-desk/freescout (full history)…
+[999D[1A[J[?25hAcquired freescout-help-desk/freescout @ e0818074363e426ee21c636f97380ecd661d7cbe (default branch: dist)
+Screened freescout-help-desk/freescout (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-----------------------------+
+| criterion                              | outcome | measured                    |
++----------------------------------------+---------+-----------------------------+
+| laravel/framework direct dependency    | pass    | v5.5.40                     |
+| >= 3 Laravel majors on trunk           | fail    | 1 majors                    |
+| PHPUnit or Pest suite at HEAD          | pass    | 6 files route               |
+| history fully cloneable                | pass    | full clone acquired         |
+| not framework core or package          | pass    | type: (absent)              |
+| not a fork without independent history | pass    | not a fork                  |
+| test file proportion (pool-relative)   | pending | 1.23% (7 of 569 files)      |
+| test LOC proportion (pool-relative)    | pending | 0.63% (948 of 151058 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                |
++----------------------------------------+---------+-----------------------------+
+
+   INFO  ▶ BookStackApp/BookStack.  
+
+[?25l [36m⠶[39m Cloning BookStackApp/BookStack (full history)…
+[999D[1A[J[?25hAcquired BookStackApp/BookStack @ c813c1b3628c0b6bd757c12cadaa56f50724117d (default branch: development)
+Screened BookStackApp/BookStack (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-------------------------------+
+| criterion                              | outcome | measured                      |
++----------------------------------------+---------+-------------------------------+
+| laravel/framework direct dependency    | pass    | ^v12.26.4                     |
+| >= 3 Laravel majors on trunk           | pass    | 7 majors                      |
+| PHPUnit or Pest suite at HEAD          | pass    | 151 files route               |
+| history fully cloneable                | pass    | full clone acquired           |
+| not framework core or package          | pass    | type: project                 |
+| not a fork without independent history | pass    | not a fork                    |
+| test file proportion (pool-relative)   | pending | 19.48% (151 of 775 files)     |
+| test LOC proportion (pool-relative)    | pending | 37.81% (31059 of 82147 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                  |
++----------------------------------------+---------+-------------------------------+
+
+   INFO  ▶ librenms/librenms.  
+
+[?25l [36m⠶[39m Cloning librenms/librenms (full history)…
+[999D[1A[J[?25hAcquired librenms/librenms @ 2a6a6b1fce1602532001666560f04f80c8227772 (default branch: master)
+Screened librenms/librenms (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-------------------------------+
+| criterion                              | outcome | measured                      |
++----------------------------------------+---------+-------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.10                        |
+| >= 3 Laravel majors on trunk           | pass    | 7 majors                      |
+| PHPUnit or Pest suite at HEAD          | pass    | 155 files route               |
+| history fully cloneable                | pass    | full clone acquired           |
+| not framework core or package          | pass    | type: project                 |
+| not a fork without independent history | pass    | not a fork                    |
+| test file proportion (pool-relative)   | pending | 3.01% (155 of 5149 files)     |
+| test LOC proportion (pool-relative)    | pending | 6.14% (21577 of 351239 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                  |
++----------------------------------------+---------+-------------------------------+
+
+   INFO  ▶ ushahidi/platform.  
+
+[?25l [36m⠶[39m Cloning ushahidi/platform (full history)…
+[999D[1A[J[?25hAcquired ushahidi/platform @ 78f81b4be6c9aa7cc0a49d6b9d53cf744f45d382 (default branch: develop)
+Screened ushahidi/platform (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+------------------------------+
+| criterion                              | outcome | measured                     |
++----------------------------------------+---------+------------------------------+
+| laravel/framework direct dependency    | pass    | ^8.0                         |
+| >= 3 Laravel majors on trunk           | fail    | 2 majors                     |
+| PHPUnit or Pest suite at HEAD          | pass    | 61 files route               |
+| history fully cloneable                | pass    | full clone acquired          |
+| not framework core or package          | pass    | type: project                |
+| not a fork without independent history | pass    | not a fork                   |
+| test file proportion (pool-relative)   | pending | 3.49% (61 of 1748 files)     |
+| test LOC proportion (pool-relative)    | pending | 6.66% (7985 of 119870 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                 |
++----------------------------------------+---------+------------------------------+
+
+   INFO  ▶ aimeos/aimeos.  
+
+[?25l [36m⠶[39m Cloning aimeos/aimeos (full history)…
+[999D[1A[J[?25hAcquired aimeos/aimeos @ 919720089ad5ff6e63eee9c0aaf4a42c2cc27340 (default branch: master)
+Screened aimeos/aimeos (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+---------------------------+
+| criterion                              | outcome | measured                  |
++----------------------------------------+---------+---------------------------+
+| laravel/framework direct dependency    | pass    | ^13.0                     |
+| >= 3 Laravel majors on trunk           | pass    | 8 majors                  |
+| PHPUnit or Pest suite at HEAD          | pass    | 9 files route             |
+| history fully cloneable                | pass    | full clone acquired       |
+| not framework core or package          | pass    | type: project             |
+| not a fork without independent history | pass    | not a fork                |
+| test file proportion (pool-relative)   | pending | 11.54% (9 of 78 files)    |
+| test LOC proportion (pool-relative)    | pending | 9.50% (446 of 4695 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)              |
++----------------------------------------+---------+---------------------------+
+
+   INFO  ▶ avored/laravel-ecommerce.  
+
+[?25l [36m⠶[39m Cloning avored/laravel-ecommerce (full history)…
+[999D[1A[J[?25hAcquired avored/laravel-ecommerce @ 9e58310553e15273a433c80f96ee1264978593f8 (default branch: main)
+analyse:screen threw for avored/laravel-ecommerce: file_get_contents(/Users/eugeniabonocore/Herd/lta/storage/corpus/avored__laravel-ecommerce/composer.json): Failed to open stream: No such file or directory
+
+   INFO  ▶ coollabsio/coolify.  
+
+[?25l [36m⠶[39m Cloning coollabsio/coolify (full history)…
+[999D[1A[J[?25hAcquired coollabsio/coolify @ 940571e16f5a0e6c73cf56b4bb1184bed3d60623 (default branch: v4.x)
+Screened coollabsio/coolify (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^12.49.0                       |
+| >= 3 Laravel majors on trunk           | pass    | 3 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 536 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 32.31% (537 of 1662 files)     |
+| test LOC proportion (pool-relative)    | pending | 35.69% (86880 of 243436 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ gitscrum-core/laravel-gitscrum.  
+
+[?25l [36m⠶[39m Cloning gitscrum-core/laravel-gitscrum (full history)…
+[999D[1A[J[?25hAcquired gitscrum-core/laravel-gitscrum @ a8bd5d759dbe976596aaf4a982e3afb982e3044c (default branch: master)
+Screened gitscrum-core/laravel-gitscrum (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------+
+| criterion                              | outcome | measured                 |
++----------------------------------------+---------+--------------------------+
+| laravel/framework direct dependency    | pass    | 5.5.*                    |
+| >= 3 Laravel majors on trunk           | fail    | 1 majors                 |
+| PHPUnit or Pest suite at HEAD          | fail    | 0 files route            |
+| history fully cloneable                | pass    | full clone acquired      |
+| not framework core or package          | pass    | type: application        |
+| not a fork without independent history | pass    | not a fork               |
+| test file proportion (pool-relative)   | pending | 0.00% (0 of 221 files)   |
+| test LOC proportion (pool-relative)    | pending | 0.00% (0 of 13198 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)             |
++----------------------------------------+---------+--------------------------+
+
+   INFO  ▶ cydrobolt/polr.  
+
+[?25l [36m⠶[39m Cloning cydrobolt/polr (full history)…
+[999D[1A[J[?25hAcquired cydrobolt/polr @ 677080f318c2131c2bd69998d0770a10dd8a3de1 (default branch: master)
+Screened cydrobolt/polr (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+---------------------------+
+| criterion                              | outcome | measured                  |
++----------------------------------------+---------+---------------------------+
+| laravel/framework direct dependency    | fail    |                           |
+| >= 3 Laravel majors on trunk           | fail    | 0 majors                  |
+| PHPUnit or Pest suite at HEAD          | pass    | 5 files route             |
+| history fully cloneable                | pass    | full clone acquired       |
+| not framework core or package          | pass    | type: project             |
+| not a fork without independent history | pass    | not a fork                |
+| test file proportion (pool-relative)   | pending | 8.93% (5 of 56 files)     |
+| test LOC proportion (pool-relative)    | pending | 4.05% (134 of 3310 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)              |
++----------------------------------------+---------+---------------------------+
+
+   INFO  ▶ CoasterCms/coastercms.  
+
+[?25l [36m⠶[39m Cloning CoasterCms/coastercms (full history)…
+[999D[1A[J[?25hAcquired CoasterCms/coastercms @ d9b7cfb42485576915a1cb54899b7023a8087a24 (default branch: 8.x)
+Screened CoasterCms/coastercms (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------+
+| criterion                              | outcome | measured                 |
++----------------------------------------+---------+--------------------------+
+| laravel/framework direct dependency    | fail    |                          |
+| >= 3 Laravel majors on trunk           | fail    | 1 majors                 |
+| PHPUnit or Pest suite at HEAD          | pass    | 2 files route            |
+| history fully cloneable                | pass    | full clone acquired      |
+| not framework core or package          | pass    | type: project            |
+| not a fork without independent history | pass    | not a fork               |
+| test file proportion (pool-relative)   | pending | 4.76% (2 of 42 files)    |
+| test LOC proportion (pool-relative)    | pending | 1.80% (39 of 2164 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)             |
++----------------------------------------+---------+--------------------------+
+
+   INFO  ▶ OpnForm/OpnForm.  
+
+[?25l [36m⠶[39m Cloning OpnForm/OpnForm (full history)…
+[999D[1A[J[?25hAcquired OpnForm/OpnForm @ 3a1b5abd3f6327aa90ff7ba123423df756e8f66e (default branch: main)
+analyse:screen threw for OpnForm/OpnForm: file_get_contents(/Users/eugeniabonocore/Herd/lta/storage/corpus/OpnForm__OpnForm/composer.json): Failed to open stream: No such file or directory
+
+   INFO  ▶ fresns/fresns.  
+
+[?25l [36m⠶[39m Cloning fresns/fresns (full history)…
+[999D[1A[J[?25hAcquired fresns/fresns @ 4a763ea27c3c24fa369caba1c26913c4dc7d2cc8 (default branch: 3.x)
+Screened fresns/fresns (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------+
+| criterion                              | outcome | measured                 |
++----------------------------------------+---------+--------------------------+
+| laravel/framework direct dependency    | pass    | ^13.14                   |
+| >= 3 Laravel majors on trunk           | pass    | 6 majors                 |
+| PHPUnit or Pest suite at HEAD          | fail    | 0 files route            |
+| history fully cloneable                | pass    | full clone acquired      |
+| not framework core or package          | pass    | type: project            |
+| not a fork without independent history | pass    | not a fork               |
+| test file proportion (pool-relative)   | pending | 0.00% (0 of 387 files)   |
+| test LOC proportion (pool-relative)    | pending | 0.00% (0 of 64466 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)             |
++----------------------------------------+---------+--------------------------+
+
+   INFO  ▶ paymenter/paymenter.  
+
+[?25l [36m⠶[39m Cloning paymenter/paymenter (full history)…
+[999D[1A[J[?25hAcquired paymenter/paymenter @ f8a884e670e9b9e5efb59ab5a7c606bf058b17d7 (default branch: master)
+Screened paymenter/paymenter (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-----------------------------+
+| criterion                              | outcome | measured                    |
++----------------------------------------+---------+-----------------------------+
+| laravel/framework direct dependency    | pass    | ^12.0                       |
+| >= 3 Laravel majors on trunk           | fail    | 2 majors                    |
+| PHPUnit or Pest suite at HEAD          | pass    | 11 files route              |
+| history fully cloneable                | pass    | full clone acquired         |
+| not framework core or package          | pass    | type: project               |
+| not a fork without independent history | pass    | not a fork                  |
+| test file proportion (pool-relative)   | pending | 1.64% (11 of 672 files)     |
+| test LOC proportion (pool-relative)    | pending | 3.71% (1555 of 41899 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                |
++----------------------------------------+---------+-----------------------------+
+
+   INFO  ▶ iceburgcrm/iceburgcrm.  
+
+[?25l [36m⠶[39m Cloning iceburgcrm/iceburgcrm (full history)…
+[999D[1A[J[?25hAcquired iceburgcrm/iceburgcrm @ 6cdb2ad70175124fd381ae2dbf93ed16e47ee48f (default branch: main)
+Screened iceburgcrm/iceburgcrm (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-----------------------------+
+| criterion                              | outcome | measured                    |
++----------------------------------------+---------+-----------------------------+
+| laravel/framework direct dependency    | pass    | ^10.0                       |
+| >= 3 Laravel majors on trunk           | fail    | 2 majors                    |
+| PHPUnit or Pest suite at HEAD          | pass    | 15 files route              |
+| history fully cloneable                | pass    | full clone acquired         |
+| not framework core or package          | pass    | type: project               |
+| not a fork without independent history | pass    | not a fork                  |
+| test file proportion (pool-relative)   | pending | 7.98% (15 of 188 files)     |
+| test LOC proportion (pool-relative)    | pending | 2.71% (1118 of 41227 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                |
++----------------------------------------+---------+-----------------------------+
+
+   INFO  ▶ vitodeploy/vito.  
+
+[?25l [36m⠶[39m Cloning vitodeploy/vito (full history)…
+[999D[1A[J[?25hAcquired vitodeploy/vito @ dc7575875b9a0d59f3979388e5ddd955d22ee7dd (default branch: 4.x)
+Screened vitodeploy/vito (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^13.0                          |
+| >= 3 Laravel majors on trunk           | pass    | 4 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 172 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 13.58% (174 of 1281 files)     |
+| test LOC proportion (pool-relative)    | pending | 35.74% (43312 of 121177 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ lakasir/lakasir.  
+
+[?25l [36m⠶[39m Cloning lakasir/lakasir (full history)…
+[999D[1A[J[?25hAcquired lakasir/lakasir @ e0d47d00d8d76192f2f7225d71f5c20ebf5ead27 (default branch: 1.x)
+Screened lakasir/lakasir (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+-----------------------------+
+| criterion                              | outcome | measured                    |
++----------------------------------------+---------+-----------------------------+
+| laravel/framework direct dependency    | pass    | ^11.9                       |
+| >= 3 Laravel majors on trunk           | pass    | 4 majors                    |
+| PHPUnit or Pest suite at HEAD          | pass    | 13 files route              |
+| history fully cloneable                | pass    | full clone acquired         |
+| not framework core or package          | pass    | type: project               |
+| not a fork without independent history | pass    | not a fork                  |
+| test file proportion (pool-relative)   | pending | 2.78% (14 of 504 files)     |
+| test LOC proportion (pool-relative)    | pending | 6.96% (2009 of 28885 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                |
++----------------------------------------+---------+-----------------------------+
+
+   INFO  ▶ cattr-app/server-application.  
+
+[?25l [36m⠶[39m Cloning cattr-app/server-application (full history)…
+[999D[1A[J[?25hanalyse:acquire threw for cattr-app/server-application: The command "'git' 'clone' 'https://github.com/cattr-app/server-application.git' '/Users/eugeniabonocore/Herd/lta/storage/corpus/cattr-app__server-application'" failed.
+
+Exit Code: 128
+
+Error Output:
+================
+Cloning into '/Users/eugeniabonocore/Herd/lta/storage/corpus/cattr-app__server-application'...
+git-lfs filter-process: git-lfs: command not found
+fatal: the remote end hung up unexpectedly
+warning: Clone succeeded, but checkout failed.
+You can inspect what was checked out with 'git status'
+and retry with 'git restore --source=HEAD :/'
+
+
+
+   INFO  ▶ aureuserp/aureuserp.  
+
+[?25l [36m⠶[39m Cloning aureuserp/aureuserp (full history)…
+[999D[1A[J[?25hAcquired aureuserp/aureuserp @ 8409fde6250d2e3f91522aed0bd0defd18b7a5d8 (default branch: master)
+Screened aureuserp/aureuserp (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^13.0                          |
+| >= 3 Laravel majors on trunk           | fail    | 2 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 163 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 4.65% (163 of 3505 files)      |
+| test LOC proportion (pool-relative)    | pending | 11.41% (33659 of 295095 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  ▶ unopim/unopim.  
+
+[?25l [36m⠶[39m Cloning unopim/unopim (full history)…
+[999D[1A[J[?25hAcquired unopim/unopim @ 3fc23bf8d30ac9b7ed2a18936b28e64a6d255e92 (default branch: 3.0)
+Screened unopim/unopim (phase 1; proportions decided at --finalise).
++----------------------------------------+---------+--------------------------------+
+| criterion                              | outcome | measured                       |
++----------------------------------------+---------+--------------------------------+
+| laravel/framework direct dependency    | pass    | ^13.0                          |
+| >= 3 Laravel majors on trunk           | pass    | 3 majors                       |
+| PHPUnit or Pest suite at HEAD          | pass    | 654 files route                |
+| history fully cloneable                | pass    | full clone acquired            |
+| not framework core or package          | pass    | type: project                  |
+| not a fork without independent history | pass    | not a fork                     |
+| test file proportion (pool-relative)   | pending | 28.85% (655 of 2270 files)     |
+| test LOC proportion (pool-relative)    | pending | 35.43% (84220 of 237707 lines) |
+| not tutorial/coursework/demo (manual)  | pending | (unanswered)                   |
++----------------------------------------+---------+--------------------------------+
+
+   INFO  Batch summary.  
+
++--------------------------------+---------+--------+
+| repository                     | acquire | screen |
++--------------------------------+---------+--------+
+| grokability/snipe-it           | ✓       | ✓      |
+| InvoiceShelf/InvoiceShelf      | ✓       | ✓      |
+| firefly-iii/firefly-iii        | ✓       | ✓      |
+| monicahq/monica                | ✓       | ✓      |
+| koel/koel                      | ✓       | ✓      |
+| akaunting/akaunting            | ✓       | ✓      |
+| bagisto/bagisto                | ✓       | ✓      |
+| laravelio/laravel.io           | ✓       | ✓      |
+| pixelfed/pixelfed              | ✓       | ✓      |
+| pterodactyl/panel              | ✓       | ✓      |
+| LycheeOrg/Lychee               | ✓       | ✓      |
+| Kovah/LinkAce                  | ✓       | ✓      |
+| phpvms/phpvms                  | ✓       | ✓      |
+| realodix/urlhub                | ✓       | ✓      |
+| krayin/laravel-crm             | ✓       | ✓      |
+| faveosuite/faveo-helpdesk      | ✓       | ✓      |
+| Attendize/Attendize            | ✓       | ✓      |
+| TypiCMS/TypiCMS                | ✓       | ✓      |
+| eveseat/seat                   | ✓       | ✓      |
+| octobercms/october             | ✓       | ✓      |
+| wintercms/winter               | ✓       | ✓      |
+| microweber/microweber          | ✓       | ✓      |
+| pyrocms/pyrocms                | ✓       | ✓      |
+| LavaLite/cms                   | ✓       | ✓      |
+| AsgardCms/Platform             | ✓       | ✓      |
+| tastyigniter/TastyIgniter      | ✓       | ✓      |
+| crater-invoice-inc/crater      | ✓       | ✓      |
+| invoiceninja/invoiceninja      | ✓       | ✓      |
+| freescout-help-desk/freescout  | ✓       | ✓      |
+| BookStackApp/BookStack         | ✓       | ✓      |
+| librenms/librenms              | ✓       | ✓      |
+| ushahidi/platform              | ✓       | ✓      |
+| aimeos/aimeos                  | ✓       | ✓      |
+| avored/laravel-ecommerce       | ✓       | ✗      |
+| coollabsio/coolify             | ✓       | ✓      |
+| gitscrum-core/laravel-gitscrum | ✓       | ✓      |
+| cydrobolt/polr                 | ✓       | ✓      |
+| CoasterCms/coastercms          | ✓       | ✓      |
+| OpnForm/OpnForm                | ✓       | ✗      |
+| fresns/fresns                  | ✓       | ✓      |
+| paymenter/paymenter            | ✓       | ✓      |
+| iceburgcrm/iceburgcrm          | ✓       | ✓      |
+| vitodeploy/vito                | ✓       | ✓      |
+| lakasir/lakasir                | ✓       | ✓      |
+| cattr-app/server-application   | ✗       | –      |
+| aureuserp/aureuserp            | ✓       | ✓      |
+| unopim/unopim                  | ✓       | ✓      |
++--------------------------------+---------+--------+
+3 of 47 repositories failed: avored/laravel-ecommerce, OpnForm/OpnForm, cattr-app/server-application

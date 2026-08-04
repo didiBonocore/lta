@@ -42,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $manual_decision
  * @property string|null $manual_reason
  * @property Carbon|null $manual_decided_at
+ * @property string|null $screening_notes
  * @property string $verdict
  * @property Carbon|null $verdict_computed_at
  * @property Carbon|null $screened_at

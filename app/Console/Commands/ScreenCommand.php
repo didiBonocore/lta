@@ -85,7 +85,14 @@ class ScreenCommand extends Command
         return self::FAILURE;
     }
 
-    /** Phase 1: measure one acquired candidate and decide every criterion decidable alone. */
+    /**
+     * Phase 1: measure one acquired candidate and decide every criterion decidable alone.
+     *
+     * Screening never raises. A criterion that cannot be evaluated — missing or unreadable
+     * composer.json, a failed history walk — FAILS with the reason recorded in
+     * screening_notes: a candidate that threw would have no row and be silently absent from
+     * both the quartile pool and the published decision log.
+     */
     private function screenCandidate(string $fullName, SuiteDiscovery $discovery, TrunkMajorWalk $walk): int
     {
         $repository = Repository::where('full_name', $fullName)->first();
@@ -96,47 +103,83 @@ class ScreenCommand extends Command
             return self::FAILURE;
         }
 
-        $composer = json_decode((string) file_get_contents($root.'/composer.json'), true);
-        $require = is_array($composer) && is_array($composer['require'] ?? null) ? $composer['require'] : [];
+        $notes = [];
 
-        // laravel/framework must be a direct dependency; illuminate/support alone is not
-        // accepted (it appears in packages that merely use the framework's components).
-        $frameworkConstraint = $require['laravel/framework'] ?? null;
-        $supportConstraint = $require['illuminate/support'] ?? null;
-        $dependencyOk = is_string($frameworkConstraint) ? 'pass' : 'fail';
-        $recordedConstraint = is_string($frameworkConstraint)
-            ? $frameworkConstraint
-            : (is_string($supportConstraint) ? "illuminate/support only: {$supportConstraint}" : null);
+        $manifestPath = $root.'/composer.json';
+        $manifestRaw = is_file($manifestPath) ? @file_get_contents($manifestPath) : false;
+        $composer = $manifestRaw === false ? null : json_decode($manifestRaw, true);
 
-        $representatives = $walk->representatives($root);
-        $majorsCount = count($representatives);
+        if (! is_array($composer)) {
+            $reason = $manifestRaw === false
+                ? 'composer.json missing or unreadable at the clone root'
+                : 'composer.json is not valid JSON';
+            $notes[] = "dependency, package: {$reason}";
 
-        // Same router as extraction: at least one file at HEAD must route to a front end.
-        $files = $discovery->discover(new WorkingTree($root));
-        $routedFiles = $this->countRoutedFiles($root, $files);
+            $dependencyOk = 'fail';
+            $recordedConstraint = "({$reason})";
+            $composerType = null;
+            $packageOk = 'fail';
+        } else {
+            $require = is_array($composer['require'] ?? null) ? $composer['require'] : [];
 
-        // Not the framework core or a package: composer's type field, plus the core repo by
-        // name. An absent type technically defaults to "library" in composer semantics, but
-        // many real applications omit it, so only an EXPLICIT library declaration fails.
-        $composerType = is_array($composer) && is_string($composer['type'] ?? null) ? $composer['type'] : null;
-        $packageOk = ($fullName === 'laravel/framework' || $composerType === 'library') ? 'fail' : 'pass';
+            // laravel/framework must be a direct dependency; illuminate/support alone is not
+            // accepted (it appears in packages that merely use the framework's components).
+            $frameworkConstraint = $require['laravel/framework'] ?? null;
+            $supportConstraint = $require['illuminate/support'] ?? null;
+            $dependencyOk = is_string($frameworkConstraint) ? 'pass' : 'fail';
+            $recordedConstraint = is_string($frameworkConstraint)
+                ? $frameworkConstraint
+                : (is_string($supportConstraint) ? "illuminate/support only: {$supportConstraint}" : null);
+
+            // Not the framework core or a package: composer's type field, plus the core repo
+            // by name. An absent type technically defaults to "library" in composer
+            // semantics, but many real applications omit it, so only an EXPLICIT library
+            // declaration fails.
+            $composerType = is_string($composer['type'] ?? null) ? $composer['type'] : null;
+            $packageOk = ($fullName === 'laravel/framework' || $composerType === 'library') ? 'fail' : 'pass';
+        }
+
+        try {
+            $majorsCount = count($walk->representatives($root));
+            $majorsOk = $majorsCount >= 3 ? 'pass' : 'fail';
+        } catch (\Throwable $e) {
+            $majorsCount = null;
+            $majorsOk = 'fail';
+            $notes[] = 'majors: first-parent walk failed — '.$e->getMessage();
+        }
+
+        try {
+            // Same router as extraction: at least one file at HEAD must route to a front end.
+            $files = $discovery->discover(new WorkingTree($root));
+            $routedFiles = $this->countRoutedFiles($root, $files);
+            $suiteOk = $routedFiles > 0 ? 'pass' : 'fail';
+            $proportions = $this->measureProportions($root, $files);
+        } catch (\Throwable $e) {
+            $routedFiles = null;
+            $suiteOk = 'fail';
+            $proportions = [];
+            $notes[] = 'suite, proportions: discovery or measurement failed — '.$e->getMessage();
+        }
 
         [$forkOk, $forkAheadBy] = $this->forkCriterion($repository);
 
-        $proportions = $this->measureProportions($root, $files);
-
-        $rootSha = trim(Process::path($root)
-            ->run(['git', 'rev-list', '--max-parents=0', '--first-parent', 'HEAD'])
-            ->throw()
-            ->output());
+        try {
+            $rootSha = trim(Process::path($root)
+                ->run(['git', 'rev-list', '--max-parents=0', '--first-parent', 'HEAD'])
+                ->throw()
+                ->output());
+        } catch (\Throwable $e) {
+            $rootSha = null;
+            $notes[] = 'shared history: root commit unavailable — '.$e->getMessage();
+        }
 
         $candidate = Candidate::updateOrCreate(
             ['full_name' => $fullName],
             [
                 'repository_id' => $repository->id,
                 'dependency_ok' => $dependencyOk,
-                'majors_ok' => $majorsCount >= 3 ? 'pass' : 'fail',
-                'suite_ok' => $routedFiles > 0 ? 'pass' : 'fail',
+                'majors_ok' => $majorsOk,
+                'suite_ok' => $suiteOk,
                 'cloneable_ok' => 'pass', // screening runs on the acquired full clone
                 'package_ok' => $packageOk,
                 'fork_ok' => $forkOk,
@@ -148,9 +191,18 @@ class ScreenCommand extends Command
                 'suite_routed_files' => $routedFiles,
                 'fork_ahead_by' => $forkAheadBy,
                 'root_commit_sha' => $rootSha,
+                'screening_notes' => $notes === [] ? null : implode("\n", $notes),
                 'verdict' => 'pending',
                 'verdict_computed_at' => null,
                 'screened_at' => now(),
+                // Reset measured values first so a re-screen that fails measurement does
+                // not leave stale numbers beside a fail outcome.
+                'test_file_count' => null,
+                'php_file_count' => null,
+                'test_file_proportion' => null,
+                'test_line_count' => null,
+                'php_line_count' => null,
+                'test_loc_proportion' => null,
                 ...$proportions,
             ],
         );
@@ -166,10 +218,18 @@ class ScreenCommand extends Command
             ['history fully cloneable', $candidate->cloneable_ok, 'full clone acquired'],
             ['not framework core or package', $candidate->package_ok, 'type: '.($candidate->composer_type ?? '(absent)')],
             ['not a fork without independent history', $candidate->fork_ok, $repository->is_fork ? "fork, ahead by {$candidate->fork_ahead_by}" : 'not a fork'],
-            ['test file proportion (pool-relative)', $candidate->file_proportion_ok, sprintf('%.2f%% (%d of %d files)', $candidate->test_file_proportion * 100, $candidate->test_file_count, $candidate->php_file_count)],
-            ['test LOC proportion (pool-relative)', $candidate->loc_proportion_ok, sprintf('%.2f%% (%d of %d lines)', $candidate->test_loc_proportion * 100, $candidate->test_line_count, $candidate->php_line_count)],
+            ['test file proportion (pool-relative)', $candidate->file_proportion_ok, $candidate->test_file_proportion === null
+                ? '(not measured)'
+                : sprintf('%.2f%% (%d of %d files)', $candidate->test_file_proportion * 100, $candidate->test_file_count, $candidate->php_file_count)],
+            ['test LOC proportion (pool-relative)', $candidate->loc_proportion_ok, $candidate->test_loc_proportion === null
+                ? '(not measured)'
+                : sprintf('%.2f%% (%d of %d lines)', $candidate->test_loc_proportion * 100, $candidate->test_line_count, $candidate->php_line_count)],
             ['not tutorial/coursework/demo (manual)', $candidate->manual_ok, $candidate->manual_reason ?? '(unanswered)'],
         ]);
+
+        foreach ($notes as $note) {
+            $this->warn($note);
+        }
 
         if ($candidate->shared_history_with !== null) {
             $this->warn("Shares history with {$candidate->shared_history_with} (diverged at {$candidate->shared_divergence_sha}) — both flagged for the manual gate.");
@@ -297,6 +357,10 @@ class ScreenCommand extends Command
      */
     private function detectSharedHistory(Candidate $candidate, string $root): void
     {
+        if ($candidate->root_commit_sha === null) {
+            return; // root unavailable — already recorded in screening_notes
+        }
+
         $partners = Candidate::query()
             ->where('full_name', '!=', $candidate->full_name)
             ->where('root_commit_sha', $candidate->root_commit_sha)
@@ -408,12 +472,15 @@ class ScreenCommand extends Command
 
         $rows = [];
         foreach (Candidate::orderBy('full_name')->get() as $candidate) {
+            // A screened row with no measured proportion means measurement failed (the
+            // reason is in screening_notes): unevaluable criteria fail, they never idle
+            // as pending.
             $fileOk = $candidate->test_file_proportion !== null
                 ? ($candidate->test_file_proportion >= $fileQ1 ? 'pass' : 'fail')
-                : 'pending';
+                : 'fail';
             $locOk = $candidate->test_loc_proportion !== null
                 ? ($candidate->test_loc_proportion >= $locQ1 ? 'pass' : 'fail')
-                : 'pending';
+                : 'fail';
 
             $outcomes = [
                 $candidate->dependency_ok, $candidate->majors_ok, $candidate->suite_ok,
@@ -492,7 +559,7 @@ class ScreenCommand extends Command
             'fork_ahead_by', 'test_file_count', 'php_file_count', 'test_file_proportion',
             'test_line_count', 'php_line_count', 'test_loc_proportion',
             'root_commit_sha', 'shared_history_with', 'shared_divergence_sha',
-            'manual_decision', 'manual_reason', 'manual_decided_at',
+            'manual_decision', 'manual_reason', 'manual_decided_at', 'screening_notes',
         ];
 
         $absolute = str_starts_with($path, '/') ? $path : base_path($path);
