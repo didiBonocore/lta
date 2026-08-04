@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Analysis\Discovery\SuiteDiscovery;
-use App\Analysis\FrontEnd\FrontEnd;
-use App\Analysis\FrontEnd\PestFrontEnd;
-use App\Analysis\FrontEnd\PhpUnitFrontEnd;
+use App\Analysis\FrontEnd\FrontEndRouter;
 use App\Analysis\FrontEnd\UnroutableClassifier;
 use App\Analysis\Ir\Enums\TestType;
-use App\Analysis\Ir\TestFileRecord;
 use App\Analysis\Tree\GitTree;
 use App\Analysis\Tree\SourceTree;
 use App\Analysis\Tree\WorkingTree;
@@ -26,7 +23,8 @@ use PhpParser\Error as ParseError;
 use function Laravel\Prompts\progress;
 
 /**
- * Stages 2-4 — discover the suite, route each test file to the owning FrontEnd by content,
+ * Stages 2-4 — discover the suite, route each test file to the owning FrontEnd on its parse
+ * tree (FrontEndRouter, names resolved before the decision),
  * and flatten the resulting IR into TestObservation rows. --head reads the working tree at
  * the acquired HEAD (M1); without it, every version-boundary snapshot is extracted through
  * `git show` (Instrument A, M2) so the clone is never checked out serially.
@@ -117,9 +115,7 @@ class ExtractCommand extends Command
         UnroutableFile::where('snapshot_id', $snapshot->id)->delete();
 
         $files = $discovery->discover($tree);
-        // Pest before PHPUnit: Pest files are plain PHP with no class to anchor on, so the
-        // more specific closure-shape check must get first refusal.
-        $frontEnds = [new PestFrontEnd, new PhpUnitFrontEnd];
+        $router = new FrontEndRouter;
         $classifier = new UnroutableClassifier;
 
         $rows = [];
@@ -134,7 +130,7 @@ class ExtractCommand extends Command
             }
 
             try {
-                $record = $this->routeAndParse($frontEnds, $relativePath, $source);
+                $record = $router->route($source)?->parse($relativePath, $source);
             } catch (ParseError $e) {
                 $parseFailures++;
                 ParseFailure::create([
@@ -245,18 +241,6 @@ class ExtractCommand extends Command
                 return [$frontEnd, ...array_map(fn (string $t) => $byType[$t] ?? 0, $types), $group->count()];
             })->values()->all(),
         );
-    }
-
-    /** @param list<FrontEnd> $frontEnds */
-    private function routeAndParse(array $frontEnds, string $path, string $source): ?TestFileRecord
-    {
-        foreach ($frontEnds as $frontEnd) {
-            if ($frontEnd->handles($source)) {
-                return $frontEnd->parse($path, $source);
-            }
-        }
-
-        return null;
     }
 
     /** @param array<string,int> $observationsPerFrontEnd */

@@ -119,6 +119,31 @@ it('survives an unparsable test file, records it, and keeps extracting the rest'
     expect(ParseFailure::query()->count())->toBe(1);
 });
 
+it('routes a Pest file with an inline double instead of dropping it', function () {
+    /** @var TestCase $this */
+    File::copy(base_path('tests/Fixtures/Pest/InlineDoubleExample.php'), $this->root.'/tests/Feature/InlineDoubleTest.php');
+
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
+        ->assertSuccessful();
+
+    // 2 fixture-file observations + the 2 test() calls beside the inline fake; the fake
+    // class itself contributes nothing and the file is NOT recorded unroutable.
+    expect(TestObservation::query()->count())->toBe(4)
+        ->and(TestObservation::query()->where('file_path', 'tests/Feature/InlineDoubleTest.php')->where('front_end', 'pest')->count())->toBe(2)
+        ->and(UnroutableFile::query()->count())->toBe(0);
+});
+
+it('routes a PHPUnit file with a qualified parent instead of dropping it', function () {
+    /** @var TestCase $this */
+    File::copy(base_path('tests/Fixtures/PhpUnit/FullyQualifiedParentExample.php'), $this->root.'/tests/Unit/FullyQualifiedTest.php');
+
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
+        ->assertSuccessful();
+
+    expect(TestObservation::query()->where('file_path', 'tests/Unit/FullyQualifiedTest.php')->where('front_end', 'phpunit')->count())->toBe(1)
+        ->and(UnroutableFile::query()->count())->toBe(0);
+});
+
 it('persists unroutable files with their detected base class, without changing what routes', function () {
     /** @var TestCase $this */
     File::put($this->root.'/tests/Unit/CodeceptionBaseTest.php', <<<'PHP'
