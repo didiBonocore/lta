@@ -403,6 +403,45 @@ describe('five-repository dataset', function () {
             ->toContain('agent traces: 20.0% of blamed methods (10 of 50) across 2 of 5 repositories');
     });
 
+    it('re-runs the era blocks across the boundary series under --sensitivity', function () {
+        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        $base = base_path('storage/framework/testing/sens.csv');
+        File::ensureDirectoryExists(dirname($base));
+
+        reportOutput(['--sensitivity' => true, '--export' => $base]);
+
+        $lines = array_values(array_filter(explode("\n", (string) file_get_contents(base_path('storage/framework/testing/sens_sensitivity.csv')))));
+        $multiplicity = (string) file_get_contents(base_path('storage/framework/testing/sens_multiplicity.csv'));
+        File::delete(base_path('storage/framework/testing/sens_sensitivity.csv'));
+        File::delete(base_path('storage/framework/testing/sens_multiplicity.csv'));
+
+        $rows = array_map(str_getcsv(...), $lines);
+        expect($rows[0][0])->toBe('boundary')
+            // 4 configured boundaries × 3 front-end slices × 1 metric.
+            ->and(count($rows) - 1)->toBe(12);
+
+        $byKey = [];
+        foreach (array_slice($rows, 1) as $row) {
+            $byKey["{$row[0]}|{$row[2]}"] = $row;
+        }
+
+        // laravel_10 (2023-02-14) splits this corpus identically to the default cutoff.
+        expect(array_slice($byKey['laravel_10|all'], 0, 14))->toBe([
+            'laravel_10', 'test_assertion_count', 'all', '5', '0', '2.00', '3.00',
+            '0.0', '0.1250', 'yes', '1', '-1.000', '-0.760', 'large',
+        ]);
+
+        // pest_1.0 (2021-01-01) puts every method in the post window => all five
+        // repositories floor-excluded, both tests refused.
+        expect(array_slice($byKey['pest_1.0|all'], 0, 5))->toBe([
+            'pest_1.0', 'test_assertion_count', 'all', '0', '5',
+        ])->and($byKey['pest_1.0|all'][7])->toBe('—');
+
+        // Sensitivity p-values enter the multiplicity family, exploratory, once each.
+        expect($multiplicity)->toContain('sensitivity:laravel_10:era:test_assertion_count:all:wilcoxon,exploratory')
+            ->and(substr_count($multiplicity, 'sensitivity:laravel_10:era:test_assertion_count:all:wilcoxon'))->toBe(1);
+    });
+
     it('collects every produced p-value exactly once into the multiplicity block', function () {
         Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
         $base = base_path('storage/framework/testing/multi.csv');

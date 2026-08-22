@@ -74,6 +74,7 @@ class ReportCommand extends Command
     protected $signature = 'analyse:report
         {--metric= : restrict to one metric}
         {--cutoff= : override the configured ai_cutoff (sensitivity runs)}
+        {--sensitivity : re-run the era blocks once per configured boundary (ai_cutoff_series)}
         {--export= : base .csv path; each block is written to <base>_<block>.csv}';
 
     protected $description = 'Produce descriptive trends, per-repository trend and era tests, paradigm (H1) and multiplicity blocks';
@@ -100,6 +101,9 @@ class ReportCommand extends Command
         $this->reportParadigm();
         $this->reportAiComparison($metrics, $this->cutoff());
         $this->reportAgentComparison();
+        if ($this->option('sensitivity')) {
+            $this->reportSensitivity($metrics);
+        }
         $this->reportTypeDistributions();
         $this->reportMultiplicity();
 
@@ -612,6 +616,31 @@ class ReportCommand extends Command
             $post->count(),
             ...$secondary,
         ];
+    }
+
+    /**
+     * Sensitivity series (Section V-D): re-run the Instrument B era blocks once per
+     * configured boundary, re-bucketing from introduced_author_date (no re-blame), into a
+     * single `sensitivity` CSV block with a boundary column. A result that does not
+     * survive the series is reported as unstable. agent_authored is boundary-independent
+     * and is not re-run.
+     *
+     * @param  list<string>  $metrics
+     */
+    private function reportSensitivity(array $metrics): void
+    {
+        /** @var array<string, string> $series */
+        $series = (array) config('analyser.ai_cutoff_series', []);
+        if ($series === []) {
+            $this->warn('No ai_cutoff_series configured — nothing to run.');
+
+            return;
+        }
+
+        $this->components->info('Sensitivity — era comparison across the boundary series');
+        foreach ($series as $boundary => $date) {
+            $this->reportAiComparison($metrics, Carbon::parse((string) $date), 'sensitivity', (string) $boundary);
+        }
     }
 
     /**

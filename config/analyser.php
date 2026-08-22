@@ -19,6 +19,15 @@ return [
         'H3b' => 'mock_assertion_ratio',
     ],
 
+    // Sensitivity series for the era boundary (Section V-D). A result that does not survive
+    // the series is reported as unstable.
+    'ai_cutoff_series' => [
+        'pest_1.0' => '2021-01-01',  // Pest 1.0, Jan 2021 — ref [7]
+        'copilot_ga' => '2022-06-21',  // ref [26]
+        'laravel_10' => '2023-02-14',  // confirmed by the author against ref [5]
+        'autonomous_agents' => '2025-01-01',  // "adopted in 2025" per Section V-D and ref [10]
+    ],
+
     // Recognised coding-agent identities, matched case-insensitively as substrings against the
     // commit author, committer and co-authorship trailers. Pattern set follows Hora & Robbes
     // (MSR 2026), who report 100% precision on manual inspection of 500 agent commits.
