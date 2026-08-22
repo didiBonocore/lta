@@ -67,6 +67,24 @@ it('warns on empty snapshots and an unblamed repository without failing', functi
         ->assertSuccessful();
 });
 
+it('reports agent-trace prevalence and warns when the agent pass has not run', function () {
+    $repository = seedVerifiableRepository();
+
+    // agent_authored null everywhere: absent evidence, not evidence of absence.
+    $this->artisan('analyse:verify', ['full_name' => 'acme/healthy'])
+        ->expectsOutputToContain('agent attribution has not run')
+        ->assertSuccessful();
+
+    // Blame scope is the newest snapshot (major 10, one method) — traced 1 of 1.
+    TestObservation::query()->update(['agent_authored' => false]);
+    $repository->observations()->where('identifier', 'test_10')
+        ->update(['agent_authored' => true, 'agent_tool' => 'claude']);
+
+    $this->artisan('analyse:verify', ['full_name' => 'acme/healthy'])
+        ->expectsOutputToContain('100.0% of blamed methods (1 of 1, newest snapshot)')
+        ->assertSuccessful();
+});
+
 it('hard-fails on a repository with snapshots but no observations', function () {
     $repository = seedVerifiableRepository();
     TestObservation::query()->delete();

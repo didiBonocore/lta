@@ -172,6 +172,58 @@ final class DatasetQueries
     }
 
     /**
+     * Instrument B, per-repository agent-trace pairs (Aa, H3b): the window-pair shape,
+     * bucketed on agent_authored instead of the cutoff — untraced (false) vs traced (true).
+     * Methods with agent_authored null (not yet blamed for agent traces) are outside the
+     * sample: absent evidence, not evidence of absence. Same OBSERVATION_FLOOR per side;
+     * floor-excluded repositories are exposed through $excluded.
+     *
+     * @param  Collection<int, array{repository_id: int, n_untraced: int, n_traced: int}>|null  $excluded
+     *
+     * @param-out Collection<int, array{repository_id: int, n_untraced: int, n_traced: int}> $excluded
+     *
+     * @return Collection<int, array{repository_id: int, untraced: float, traced: float, n_untraced: int, n_traced: int}>
+     */
+    public static function repositoryAgentPairs(string $metric, ?Collection &$excluded = null): Collection
+    {
+        $methods = self::onePerAuthoredMethod()
+            ->filter(fn (TestObservation $o): bool => $o->agent_authored !== null);
+
+        $excluded = collect();
+
+        return $methods
+            ->groupBy('repository_id')
+            ->map(function (Collection $repository) use ($metric, $excluded): ?array {
+                [$untraced, $traced] = $repository->partition(
+                    fn (TestObservation $o): bool => $o->agent_authored === false,
+                );
+
+                /** @var TestObservation $first */
+                $first = $repository->first();
+                if ($untraced->count() < self::OBSERVATION_FLOOR || $traced->count() < self::OBSERVATION_FLOOR) {
+                    $excluded->push([
+                        'repository_id' => (int) $first->repository_id,
+                        'n_untraced' => $untraced->count(),
+                        'n_traced' => $traced->count(),
+                    ]);
+
+                    return null;
+                }
+
+                return [
+                    'repository_id' => (int) $first->repository_id,
+                    'untraced' => (float) Average::median($untraced->pluck($metric)->map(fn ($v): float => (float) $v)->all()),
+                    'traced' => (float) Average::median($traced->pluck($metric)->map(fn ($v): float => (float) $v)->all()),
+                    'n_untraced' => $untraced->count(),
+                    'n_traced' => $traced->count(),
+                ];
+            })
+            ->filter()
+            ->sortBy('repository_id')
+            ->values();
+    }
+
+    /**
      * Pf, Appendix B: the paradigm of each (repository, major) checkpoint over
      * version-boundary observations — 0 = PHPUnit only, 1 = mixed, 2 = Pest only,
      * measured on distinct routed test files. A checkpoint holding no PHPUnit or Pest

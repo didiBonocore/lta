@@ -45,6 +45,7 @@ function reportCheckpoint(Repository $repository, int $major, int $value, array 
         'kind' => 'version_boundary',
     ]);
 
+    $post = $authoredAt >= '2022-06-21';
     foreach ($filesPerFrontEnd as $frontEnd => $files) {
         for ($i = 0; $i < $files; $i++) {
             TestObservation::create([
@@ -56,9 +57,13 @@ function reportCheckpoint(Repository $repository, int $major, int $value, array 
                 'test_type' => 'unit',
                 'test_assertion_count' => $value,
                 'total_assertion_count' => $value,
+                'mock_assertion_ratio' => $value / 10,
                 'introduced_commit_sha' => 'ccc',
                 'introduced_author_date' => $authoredAt,
-                'ai_window' => $authoredAt < '2022-06-21' ? 'pre' : 'post',
+                'ai_window' => $post ? 'post' : 'pre',
+                // The H3b scenario: every post-window method carries an agent trace.
+                'agent_authored' => $post,
+                'agent_tool' => $post ? 'claude' : null,
             ]);
         }
     }
@@ -354,6 +359,50 @@ describe('five-repository dataset', function () {
             ->and($output)->toContain('3 zero difference(s) dropped (never-adopters)');
     });
 
+    it('gates H3b on prevalence and runs the paired agent comparison', function () {
+        /*
+         * Every post-window method is agent-traced: 25 of 50 blamed methods across 5 of 5
+         * repositories, and every repository holds 5 traced + 5 untraced => gate passes.
+         * mock_assertion_ratio = value/10, so per-repository medians are untraced
+         * [.1,.1,.2,.2,.3] (median 0.200) vs traced [.2,.3,.4,.5,.3] (median 0.300):
+         * the same structure as the era block => W = 0, exact p = 0.125,
+         * rank-biserial = −1, Cliff's delta = −0.76 (large), one zero dropped (r5).
+         */
+        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        $base = base_path('storage/framework/testing/agent.csv');
+        File::ensureDirectoryExists(dirname($base));
+
+        $output = reportOutput(['--export' => $base]);
+
+        expect($output)->toContain('agent traces: 50.0% of blamed methods (25 of 50) across 5 of 5 repositories');
+
+        $row = str_getcsv(explode("\n", (string) file_get_contents(base_path('storage/framework/testing/agent_agent_comparison.csv')))[1]);
+        File::delete(base_path('storage/framework/testing/agent_agent_comparison.csv'));
+
+        // metric, n_repositories, n_excluded_floor, median_untraced, median_traced,
+        // wilcoxon_w, wilcoxon_p, wilcoxon_exact, n_zero_dropped, rank_biserial,
+        // cliffs_delta_medians, magnitude, then the pooled secondary columns.
+        expect(array_slice($row, 0, 12))->toBe([
+            'mock_assertion_ratio', '5', '0', '0.200', '0.300',
+            '0.0', '0.1250', 'yes', '1', '-1.000', '-0.760', 'large',
+        ]);
+    });
+
+    it('refuses H3b and reports the search itself when traces are too rare', function () {
+        // Strip the traces from three repositories: only r4 and r5 keep >= 5 traced
+        // methods, under the 5-repository gate.
+        $stripped = Repository::whereIn('full_name', ['acme/r1', 'acme/r2', 'acme/r3'])->pluck('id');
+        TestObservation::whereIn('repository_id', $stripped)
+            ->update(['agent_authored' => false, 'agent_tool' => null]);
+
+        $output = reportOutput();
+
+        expect($output)->toContain('agent traces are too rare to support the paired comparison')
+            ->toContain('only 2 of 5 repositories')
+            ->toContain('the search itself is reported as a result')
+            ->toContain('agent traces: 20.0% of blamed methods (10 of 50) across 2 of 5 repositories');
+    });
+
     it('collects every produced p-value exactly once into the multiplicity block', function () {
         Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
         $base = base_path('storage/framework/testing/multi.csv');
@@ -376,6 +425,7 @@ describe('five-repository dataset', function () {
             ->and($byLabel['trend:test_assertion_count:all:wilcoxon_slopes'][2])->toBe('0.1250')
             ->and($byLabel['trend:test_assertion_count:all:wilcoxon_slopes'][3])->toBe('')
             ->and($byLabel['h1:paradigm_pf:wilcoxon'][1])->toBe('primary (H1)')
+            ->and($byLabel['agent:mock_assertion_ratio:wilcoxon'][1])->toBe('primary (H3b)')
             // The era Wilcoxon on this metric is exploratory (H3a's primary is mock_breadth)
             // and carries a Benjamini-Hochberg q.
             ->and($byLabel['era:test_assertion_count:all:wilcoxon'][1])->toBe('exploratory')

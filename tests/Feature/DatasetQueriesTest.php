@@ -35,7 +35,7 @@ function seedSnapshot(Repository $repository, int $major): Snapshot
 }
 
 /** @param list<int|float> $values */
-function seedObservations(Repository $repository, Snapshot $snapshot, array $values, string $frontEnd = 'phpunit', ?string $authoredAt = null): void
+function seedObservations(Repository $repository, Snapshot $snapshot, array $values, string $frontEnd = 'phpunit', ?string $authoredAt = null, ?bool $agentAuthored = null): void
 {
     foreach ($values as $i => $value) {
         TestObservation::create([
@@ -50,6 +50,7 @@ function seedObservations(Repository $repository, Snapshot $snapshot, array $val
             'introduced_commit_sha' => $authoredAt === null ? null : 'abc',
             'introduced_author_date' => $authoredAt,
             'ai_window' => $authoredAt === null ? null : ($authoredAt < '2022-06-21' ? 'pre' : 'post'),
+            'agent_authored' => $agentAuthored,
         ]);
     }
 }
@@ -113,6 +114,30 @@ it('pairs per-repository window medians and exposes floor-excluded repositories'
     $pestPairs = DatasetQueries::repositoryWindowMedians('test_assertion_count', $cutoff, 'pest', $pestExcluded);
     expect($pestPairs->isEmpty())->toBeTrue()
         ->and($pestExcluded->first())->toBe(['repository_id' => $alpha->id, 'n_pre' => 0, 'n_post' => 5]);
+});
+
+it('pairs per-repository agent-trace medians, distinguishing null from false', function () {
+    // alpha: 5 untraced [1,1,2,3,5] => median 2; 5 traced [2,4,4,6,8] => median 4.
+    $alpha = seedRepository('acme/alpha');
+    $snapshot = seedSnapshot($alpha, 10);
+    seedObservations($alpha, $snapshot, [1, 1, 2, 3, 5], 'phpunit', '2021-01-01', false);
+    seedObservations($alpha, $snapshot, [2, 4, 4, 6, 8], 'pest', '2023-01-01', true);
+
+    // beta: blamed, no traces at all => floor-excluded with its counts.
+    $beta = seedRepository('acme/beta');
+    seedObservations($beta, seedSnapshot($beta, 10), [1, 2, 3, 4, 5], 'phpunit', '2021-01-01', false);
+
+    // gamma: agent attribution has not run (null) => outside the sample entirely.
+    $gamma = seedRepository('acme/gamma');
+    seedObservations($gamma, seedSnapshot($gamma, 10), [1, 2, 3, 4, 5], 'phpunit', '2021-01-01', null);
+
+    $pairs = DatasetQueries::repositoryAgentPairs('test_assertion_count', $excluded);
+
+    expect($pairs->all())->toBe([
+        ['repository_id' => $alpha->id, 'untraced' => 2.0, 'traced' => 4.0, 'n_untraced' => 5, 'n_traced' => 5],
+    ])->and($excluded->all())->toBe([
+        ['repository_id' => $beta->id, 'n_untraced' => 5, 'n_traced' => 0],
+    ]);
 });
 
 it('reduces each checkpoint to Appendix B\'s categorical Pf and counts undefined checkpoints', function () {

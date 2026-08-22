@@ -19,6 +19,14 @@ return [
         'H3b' => 'mock_assertion_ratio',
     ],
 
+    // Recognised coding-agent identities, matched case-insensitively as substrings against the
+    // commit author, committer and co-authorship trailers. Pattern set follows Hora & Robbes
+    // (MSR 2026), who report 100% precision on manual inspection of 500 agent commits.
+    'agent_patterns' => [
+        'claude', 'cursor', 'copilot', 'aider', 'openhands', 'devin',
+        'jules', 'cline', 'junie', 'gemini', 'coderabbit', 'windsurf',
+    ],
+
     // Laravel facade-fake verification methods classified as interaction verification (mock assertions).
     'facade_mock_assertions' => [
         'Event' => ['assertDispatched', 'assertNotDispatched', 'assertNothingDispatched'],

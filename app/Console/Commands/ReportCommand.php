@@ -43,8 +43,11 @@ use MathPHP\Statistics\Descriptive;
  *     sensitivity runs need no re-blame), split by paradigm (all/phpunit/pest), with the
  *     pooled Mann-Whitney U retained as secondary (pooled, independence violated) and the
  *     blame-scope attrition reported alongside;
- * (e) test-type distribution per version and per AI window as percentage tables;
- * (f) multiplicity: every p-value produced in a run is collected; pre-registered primary
+ * (e) agent authorship (Aa, H3b): agent-trace prevalence always, and the Wilcoxon
+ *     signed-rank over per-repository untraced/traced medians only past the prevalence
+ *     gate — where traces are too rare, the search itself is reported as a result;
+ * (f) test-type distribution per version and per AI window as percentage tables;
+ * (g) multiplicity: every p-value produced in a run is collected; pre-registered primary
  *     comparisons (config('analyser.primary_metrics')) pass through unadjusted and the
  *     exploratory remainder is Benjamini-Hochberg adjusted.
  *
@@ -96,6 +99,7 @@ class ReportCommand extends Command
         $this->reportTrends($metrics);
         $this->reportParadigm();
         $this->reportAiComparison($metrics, $this->cutoff());
+        $this->reportAgentComparison();
         $this->reportTypeDistributions();
         $this->reportMultiplicity();
 
@@ -608,6 +612,117 @@ class ReportCommand extends Command
             $post->count(),
             ...$secondary,
         ];
+    }
+
+    /**
+     * Agent authorship (Aa, H3b). Prevalence is always reported; the paired comparison
+     * runs only past the gate — at least REPOSITORY_FLOOR repositories holding at least
+     * OBSERVATION_FLOOR agent-traced and as many untraced methods each. Where traces are
+     * too rare, the search itself is reported as a result (H3b's fallback clause) and the
+     * test is skipped.
+     */
+    private function reportAgentComparison(): void
+    {
+        $this->components->info('Agent authorship (H3b) — recognised coding-agent traces among blamed methods');
+
+        $methods = DatasetQueries::onePerAuthoredMethod()
+            ->filter(fn (TestObservation $o): bool => $o->agent_authored !== null);
+        if ($methods->isEmpty()) {
+            $this->warn('No agent-attribution data — run analyse:blame (its agent-trace pass fills agent_authored).');
+
+            return;
+        }
+
+        // Prevalence — per repository and overall.
+        $names = Repository::query()->pluck('full_name', 'id');
+        $prevalence = ['header' => ['repository', 'blamed_methods', 'agent_traced', 'traced_pct', 'tools'], 'rows' => []];
+        $repositoriesWithTraces = 0;
+        foreach ($methods->groupBy('repository_id') as $repositoryId => $group) {
+            $traced = $group->filter(fn (TestObservation $o): bool => $o->agent_authored === true);
+            if ($traced->isNotEmpty()) {
+                $repositoriesWithTraces++;
+            }
+            $prevalence['rows'][] = [
+                (string) ($names[$repositoryId] ?? $repositoryId),
+                $group->count(),
+                $traced->count(),
+                sprintf('%.1f', $traced->count() / $group->count() * 100),
+                $traced->pluck('agent_tool')->filter()->unique()->sort()->implode(' '),
+            ];
+        }
+        $totalTraced = $methods->filter(fn (TestObservation $o): bool => $o->agent_authored === true)->count();
+        $repositoryCount = $methods->pluck('repository_id')->unique()->count();
+
+        $this->table($prevalence['header'], $prevalence['rows']);
+        $this->line(sprintf(
+            '  agent traces: %.1f%% of blamed methods (%d of %s) across %d of %d repositories',
+            $totalTraced / $methods->count() * 100,
+            $totalTraced,
+            number_format($methods->count()),
+            $repositoriesWithTraces,
+            $repositoryCount,
+        ));
+        $this->csvBlocks['agent_prevalence'] = $prevalence;
+
+        // Gate, then the H3b test on its pre-registered metric.
+        $metric = (string) config('analyser.primary_metrics.H3b');
+        $pairs = DatasetQueries::repositoryAgentPairs($metric, $excluded);
+        if ($pairs->count() < self::REPOSITORY_FLOOR) {
+            $this->warn(sprintf(
+                'H3b: agent traces are too rare to support the paired comparison — only %d of %d repositories '
+                .'hold at least %d agent-traced and %d untraced methods (floor %d repositories). '
+                .'The comparison is refused and the search itself is reported as a result: the prevalence table above is the finding.',
+                $pairs->count(),
+                $repositoryCount,
+                DatasetQueries::OBSERVATION_FLOOR,
+                DatasetQueries::OBSERVATION_FLOOR,
+                self::REPOSITORY_FLOOR,
+            ));
+
+            return;
+        }
+
+        $untracedMedians = array_values($pairs->pluck('untraced')->map(fn ($v): float => (float) $v)->all());
+        $tracedMedians = array_values($pairs->pluck('traced')->map(fn ($v): float => (float) $v)->all());
+        $wilcoxon = WilcoxonSignedRank::test($untracedMedians, $tracedMedians);
+        $this->registerP("agent:{$metric}:wilcoxon", $wilcoxon['p']);
+        $delta = EffectSize::cliffsDelta($untracedMedians, $tracedMedians);
+
+        // Secondary — pooled, independence violated.
+        $untracedValues = array_values($methods->filter(fn (TestObservation $o): bool => $o->agent_authored === false)
+            ->pluck($metric)->map(fn ($v): float => (float) $v)->all());
+        $tracedValues = array_values($methods->filter(fn (TestObservation $o): bool => $o->agent_authored === true)
+            ->pluck($metric)->map(fn ($v): float => (float) $v)->all());
+        $pooled = MannWhitney::test($untracedValues, $tracedValues);
+        $this->registerP("agent:{$metric}:mann_whitney_pooled", $pooled['p']);
+        $pooledDelta = EffectSize::cliffsDelta($untracedValues, $tracedValues);
+
+        $block = ['header' => [
+            'metric', 'n_repositories', 'n_excluded_floor', 'median_untraced', 'median_traced',
+            'wilcoxon_w', 'wilcoxon_p', 'wilcoxon_exact', 'n_zero_dropped', 'rank_biserial',
+            'cliffs_delta_medians', 'magnitude', 'pooled_u', 'pooled_z', 'pooled_p', 'pooled_cliffs_delta',
+        ], 'rows' => [[
+            $metric,
+            $pairs->count(),
+            $excluded->count(),
+            sprintf('%.3f', Average::median($untracedMedians)),
+            sprintf('%.3f', Average::median($tracedMedians)),
+            sprintf('%.1f', $wilcoxon['w']),
+            sprintf('%.4f', $wilcoxon['p']),
+            $wilcoxon['exact'] ? 'yes' : 'no',
+            $wilcoxon['n_dropped'],
+            sprintf('%.3f', $wilcoxon['rank_biserial']),
+            sprintf('%.3f', $delta),
+            EffectSize::interpret($delta),
+            sprintf('%.1f', $pooled['u']),
+            sprintf('%.3f', $pooled['z']),
+            sprintf('%.4f', $pooled['p']),
+            sprintf('%.3f', $pooledDelta),
+        ]]];
+
+        $this->line('  primary — Wilcoxon signed-rank over per-repository medians (untraced − traced); pooled Mann-Whitney secondary:');
+        $this->table($block['header'], $block['rows']);
+        $this->csvBlocks['agent_comparison'] = $block;
     }
 
     /**
