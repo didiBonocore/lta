@@ -81,6 +81,8 @@ final class DatasetQueries
      * through $droppedCells for attrition reporting. $frontEnd optionally restricts to
      * `phpunit`/`pest` (paradigm splits).
      *
+     * @param-out int $droppedCells
+     *
      * @return Collection<int, array{repository_id: int, major: int, n: int, value: float}>
      */
     public static function repositoryMajorMedians(string $metric, ?string $frontEnd = null, ?int &$droppedCells = null): Collection
@@ -124,6 +126,9 @@ final class DatasetQueries
      * section commits to. $frontEnd optionally restricts to `phpunit`/`pest`.
      *
      * @param  Collection<int, array{repository_id: int, n_pre: int, n_post: int}>|null  $excluded
+     *
+     * @param-out Collection<int, array{repository_id: int, n_pre: int, n_post: int}> $excluded
+     *
      * @return Collection<int, array{repository_id: int, pre: float, post: float, n_pre: int, n_post: int}>
      */
     public static function repositoryWindowMedians(string $metric, CarbonInterface $cutoff, ?string $frontEnd = null, ?Collection &$excluded = null): Collection
@@ -174,6 +179,8 @@ final class DatasetQueries
      * count of such checkpoints is exposed through $undefinedCheckpoints so they can be
      * "reported as such". Raw file counts ride along for the descriptive table; the
      * declared — and therefore tested — variable is the categorical pf.
+     *
+     * @param-out int $undefinedCheckpoints
      *
      * @return Collection<int, array{repository_id: int, major: int, pf: int, pest_files: int, total_files: int}>
      */
