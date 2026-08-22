@@ -129,6 +129,18 @@ it('survives an unparsable test file, records it, and keeps extracting the rest'
     expect(ParseFailure::query()->count())->toBe(1);
 });
 
+it('stores mock breadth both including and excluding facade fakes', function () {
+    /** @var TestCase $this */
+    File::copy(base_path('tests/Fixtures/PhpUnit/FacadeFakeBreadthExample.php'), $this->root.'/tests/Unit/FacadeFakeBreadthTest.php');
+
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
+        ->assertSuccessful();
+
+    $row = TestObservation::query()->where('file_path', 'tests/Unit/FacadeFakeBreadthTest.php')->sole();
+    expect($row->mock_breadth)->toBe(2)
+        ->and($row->mock_breadth_excluding_facades)->toBe(1);
+});
+
 it('routes a Pest file with an inline double instead of dropping it', function () {
     /** @var TestCase $this */
     File::copy(base_path('tests/Fixtures/Pest/InlineDoubleExample.php'), $this->root.'/tests/Feature/InlineDoubleTest.php');

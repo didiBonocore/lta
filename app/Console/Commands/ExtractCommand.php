@@ -186,6 +186,7 @@ class ExtractCommand extends Command
                     'total_assertion_count' => $method->totalAssertionCount,
                     'mock_assertion_ratio' => $method->mockAssertionRatio,
                     'mock_breadth' => $method->mockBreadth(),
+                    'mock_breadth_excluding_facades' => $method->mockBreadthExcludingFacades(),
                     'max_mock_chain_depth' => $method->maxMockChainDepth(),
                     'mock_kinds' => json_encode($method->mockKinds()),
                     'size_statements' => $method->sizeStatements,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Analysis\Ir;
 
 use App\Analysis\Ir\Enums\FrontEndKind;
+use App\Analysis\Ir\Enums\MockKind;
 use App\Analysis\Ir\Enums\TestType;
 
 /**
@@ -45,6 +46,19 @@ final class TestMethodRecord
     public function mockBreadth(): int
     {
         return count($this->mocks);
+    }
+
+    /**
+     * mockBreadth() with the same counting semantics (one per detected MockRecord, no
+     * distinctness reduction), restricted to non-facade-fake kinds — H2a/construct
+     * validity: mock trends are reported both including and excluding facade fakes.
+     */
+    public function mockBreadthExcludingFacades(): int
+    {
+        return count(array_filter(
+            $this->mocks,
+            static fn (MockRecord $m): bool => $m->kind !== MockKind::FacadeFake,
+        ));
     }
 
     public function maxMockChainDepth(): int

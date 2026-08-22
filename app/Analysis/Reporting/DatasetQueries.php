@@ -30,6 +30,7 @@ final class DatasetQueries
         'total_assertion_count',
         'mock_assertion_ratio',
         'mock_breadth',
+        'mock_breadth_excluding_facades',
         'max_mock_chain_depth',
         'size_statements',
         'size_loc',

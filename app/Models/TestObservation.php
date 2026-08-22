@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int $total_assertion_count
  * @property float $mock_assertion_ratio
  * @property int $mock_breadth
+ * @property int $mock_breadth_excluding_facades
  * @property int $max_mock_chain_depth
  * @property array<string>|null $mock_kinds
  * @property int $size_statements
