@@ -2,7 +2,7 @@
 
 All notable changes to the Laravel Test Pattern Analyser will be documented in this file.
 
-## [v0.3.0] - 2026-08-22
+## [v0.7.0] - 2026-08-22
 
 ### Breaking Changes
 - **Dataset Schema Update**: Added `agent_authored`, `agent_tool`, `tool_version`, and `mock_breadth_excluding_facades` columns to `test_observations`. The extraction-level columns cannot be backfilled without re-parsing, so previously mined datasets are incompatible and must be re-mined. Rationale: closes Appendix B's three previously uncomputable variables (Aa agent attribution, Tv tool version) and the facade-fake-excluded mock breadth H2a commits to.

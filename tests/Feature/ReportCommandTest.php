@@ -280,7 +280,7 @@ describe('five-repository dataset', function () {
     });
 
     it('runs the primary trend test over per-repository Theil-Sen slopes', function () {
-        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        Process::fake(['*describe*' => Process::result("v0.7.0\n")]);
         $base = base_path('storage/framework/testing/trend.csv');
         File::ensureDirectoryExists(dirname($base));
 
@@ -311,7 +311,7 @@ describe('five-repository dataset', function () {
     });
 
     it('runs the primary era test over per-repository window medians, split by paradigm', function () {
-        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        Process::fake(['*describe*' => Process::result("v0.7.0\n")]);
         $base = base_path('storage/framework/testing/era.csv');
         File::ensureDirectoryExists(dirname($base));
 
@@ -339,7 +339,7 @@ describe('five-repository dataset', function () {
     });
 
     it('reports H1 as descriptive Pf per major plus the boundary-spanning paired test', function () {
-        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        Process::fake(['*describe*' => Process::result("v0.7.0\n")]);
         $base = base_path('storage/framework/testing/pf.csv');
         File::ensureDirectoryExists(dirname($base));
 
@@ -368,7 +368,7 @@ describe('five-repository dataset', function () {
          * the same structure as the era block => W = 0, exact p = 0.125,
          * rank-biserial = −1, Cliff's delta = −0.76 (large), one zero dropped (r5).
          */
-        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        Process::fake(['*describe*' => Process::result("v0.7.0\n")]);
         $base = base_path('storage/framework/testing/agent.csv');
         File::ensureDirectoryExists(dirname($base));
 
@@ -404,7 +404,7 @@ describe('five-repository dataset', function () {
     });
 
     it('re-runs the era blocks across the boundary series under --sensitivity', function () {
-        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        Process::fake(['*describe*' => Process::result("v0.7.0\n")]);
         $base = base_path('storage/framework/testing/sens.csv');
         File::ensureDirectoryExists(dirname($base));
 
@@ -443,7 +443,7 @@ describe('five-repository dataset', function () {
     });
 
     it('collects every produced p-value exactly once into the multiplicity block', function () {
-        Process::fake(['*describe*' => Process::result("v0.3.0\n")]);
+        Process::fake(['*describe*' => Process::result("v0.7.0\n")]);
         $base = base_path('storage/framework/testing/multi.csv');
         File::ensureDirectoryExists(dirname($base));
 
