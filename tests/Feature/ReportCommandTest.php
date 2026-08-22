@@ -281,16 +281,27 @@ describe('five-repository dataset', function () {
 
         reportOutput(['--export' => $base]);
 
-        $trend = str_getcsv(explode("\n", (string) file_get_contents(base_path('storage/framework/testing/trend_trend.csv')))[1]);
+        $lines = array_values(array_filter(explode("\n", (string) file_get_contents(base_path('storage/framework/testing/trend_trend.csv')))));
         File::delete(base_path('storage/framework/testing/trend_trend.csv'));
 
         // header: metric, front_end, n_repositories, median_slope, median_tau,
         // n_positive_slopes, n_negative_slopes, wilcoxon_w, wilcoxon_p, wilcoxon_exact,
         // n_zero_slopes_dropped, rank_biserial, cliffs_delta_ends, magnitude,
         // spearman_median_rho, spearman_wilcoxon_p
-        expect($trend)->toBe([
+        expect(str_getcsv($lines[1]))->toBe([
             'test_assertion_count', 'all', '5', '2.0000', '1.000', '4', '0',
             '0.0', '0.1250', 'yes', '1', '1.000', '-0.760', 'large', '1.000', '0.1250',
+        ]);
+
+        // H2b's metric is additionally split by paradigm. phpunit slice: r3's major-10
+        // phpunit cell (3 methods) falls under the observation floor, so only r1 and r2
+        // contribute two-point series — slopes [1,2], median 1.5, refused (repository
+        // floor). pest slice: only r5 contributes ([3,3], slope 0) — refused too.
+        expect(array_slice(str_getcsv($lines[2]), 0, 7))->toBe([
+            'test_assertion_count', 'phpunit', '2', '1.5000', '1.000', '2', '0',
+        ])->and(str_getcsv($lines[2])[7])->toBe('—');
+        expect(array_slice(str_getcsv($lines[3]), 0, 7))->toBe([
+            'test_assertion_count', 'pest', '1', '0.0000', '0.000', '0', '0',
         ]);
     });
 

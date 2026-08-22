@@ -242,7 +242,9 @@ class ReportCommand extends Command
      */
     private function trendFrontEnds(string $metric): array
     {
-        return [null];
+        return $metric === (string) config('analyser.primary_metrics.H2b')
+            ? [null, 'phpunit', 'pest']
+            : [null];
     }
 
     /**
