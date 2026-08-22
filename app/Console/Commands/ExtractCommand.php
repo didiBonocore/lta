@@ -8,6 +8,7 @@ use App\Analysis\Discovery\SuiteDiscovery;
 use App\Analysis\FrontEnd\FrontEndRouter;
 use App\Analysis\FrontEnd\UnroutableClassifier;
 use App\Analysis\Ir\Enums\TestType;
+use App\Analysis\Reporting\ToolVersion;
 use App\Analysis\Tree\GitTree;
 use App\Analysis\Tree\SourceTree;
 use App\Analysis\Tree\WorkingTree;
@@ -35,8 +36,13 @@ class ExtractCommand extends Command
 
     protected $description = 'Parse test suites into the IR and write metric rows to the dataset';
 
+    /** Tv (Appendix B): the lta revision stamped onto every emitted row, resolved once per run. */
+    private string $toolVersion = ToolVersion::RELEASE;
+
     public function handle(SuiteDiscovery $discovery): int
     {
+        $this->toolVersion = ToolVersion::resolve();
+
         $repository = Repository::where('full_name', $this->argument('full_name'))->first();
         if ($repository === null) {
             $this->error('Repository not acquired yet — run analyse:acquire first.');
@@ -180,6 +186,7 @@ class ExtractCommand extends Command
                     'total_assertion_count' => $method->totalAssertionCount,
                     'mock_assertion_ratio' => $method->mockAssertionRatio,
                     'mock_breadth' => $method->mockBreadth(),
+                    'mock_breadth_excluding_facades' => $method->mockBreadthExcludingFacades(),
                     'max_mock_chain_depth' => $method->maxMockChainDepth(),
                     'mock_kinds' => json_encode($method->mockKinds()),
                     'size_statements' => $method->sizeStatements,
@@ -188,6 +195,7 @@ class ExtractCommand extends Command
                     'end_line' => $method->endLine > 0 ? $method->endLine : null,
                     'uses_refresh_database' => $method->usesRefreshDatabase,
                     'setup_signals' => json_encode($method->setupSignals),
+                    'tool_version' => $this->toolVersion,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

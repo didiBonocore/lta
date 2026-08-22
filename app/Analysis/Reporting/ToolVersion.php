@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Process;
 final class ToolVersion
 {
     /** Baked release floor — the value reported when `git describe` cannot resolve. */
-    public const string RELEASE = 'v0.2.0';
+    public const string RELEASE = 'v0.7.0';
 
     public static function resolve(): string
     {

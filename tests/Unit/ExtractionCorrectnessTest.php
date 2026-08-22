@@ -71,6 +71,18 @@ it('extracts Pest mock assertion fixture with stubs vs mock verifications', func
         ->and($m->mockAssertionRatio)->toEqualWithDelta(5 / 6, 1e-6);
 })->group('fixtures');
 
+it('counts mock breadth both including and excluding facade fakes, identically across twins', function () {
+    // One facade fake (Queue) + one container mock (PaymentGateway):
+    // mockBreadth = 2, mockBreadthExcludingFacades = 1.
+    $php = parseFixture('PhpUnit/FacadeFakeBreadthExample.php')->methods[0];
+    $pest = parseFixture('Pest/FacadeFakeBreadthExample.php')->methods[0];
+
+    expect($php->mockBreadth())->toBe(2)
+        ->and($php->mockBreadthExcludingFacades())->toBe(1)
+        ->and($pest->mockBreadth())->toBe($php->mockBreadth())
+        ->and($pest->mockBreadthExcludingFacades())->toBe($php->mockBreadthExcludingFacades());
+})->group('fixtures');
+
 it('normalises PHPUnit and Pest feature twins to identical IR', function () {
     $php = parseFixture('PhpUnit/FeatureLoginExample.php')->methods[0];
     $pest = parseFixture('Pest/FeatureLoginExample.php')->methods[0];

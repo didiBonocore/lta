@@ -90,6 +90,16 @@ it('extracts HEAD into a head snapshot with one observation per test method', fu
     expect($this->repository->refresh()->primary_test_framework)->toBe('mixed');
 });
 
+it('stamps every observation with the tool revision that produced it (Tv)', function () {
+    /** @var TestCase $this */
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
+        ->assertSuccessful();
+
+    $versions = TestObservation::query()->pluck('tool_version')->unique();
+    expect($versions)->toHaveCount(1) // resolved once per run, identical on every row
+        ->and($versions->first())->toBeString()->not->toBe('');
+});
+
 it('is idempotent: re-extracting replaces rather than duplicates observations', function () {
     /** @var TestCase $this */
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
@@ -117,6 +127,18 @@ it('survives an unparsable test file, records it, and keeps extracting the rest'
     // Re-running replaces the failure log too — no duplicates.
     $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])->assertSuccessful();
     expect(ParseFailure::query()->count())->toBe(1);
+});
+
+it('stores mock breadth both including and excluding facade fakes', function () {
+    /** @var TestCase $this */
+    File::copy(base_path('tests/Fixtures/PhpUnit/FacadeFakeBreadthExample.php'), $this->root.'/tests/Unit/FacadeFakeBreadthTest.php');
+
+    $this->artisan('analyse:extract', ['full_name' => 'acme/shop', '--head' => true])
+        ->assertSuccessful();
+
+    $row = TestObservation::query()->where('file_path', 'tests/Unit/FacadeFakeBreadthTest.php')->sole();
+    expect($row->mock_breadth)->toBe(2)
+        ->and($row->mock_breadth_excluding_facades)->toBe(1);
 });
 
 it('routes a Pest file with an inline double instead of dropping it', function () {

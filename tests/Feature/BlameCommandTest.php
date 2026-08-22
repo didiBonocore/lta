@@ -72,6 +72,42 @@ it('attributes each test method to its introducing commit and buckets the AI win
         ->and($pest->ai_window)->toBe('post');
 });
 
+it('reduces agent identities to a boolean and tool name, persisting no author strings', function () {
+    /** @var TestCase $this */
+    // A third commit whose co-authorship trailer carries a recognised agent identity.
+    $this->repo->write('tests/Unit/AgentPestTest.php', <<<'PHP'
+        <?php
+
+        it('was co-authored by an agent', function () {
+            expect(true)->toBeTrue();
+        });
+        PHP);
+    $agentCommit = $this->repo->commit(
+        "agent-assisted test\n\nCo-Authored-By: Claude <noreply@anthropic.com>",
+        '2025-02-01T10:00:00Z',
+    );
+    $this->repository->update(['head_sha' => $this->repo->head()]);
+    $this->artisan('analyse:extract', ['full_name' => 'acme/eras', '--head' => true])->assertSuccessful();
+
+    $this->artisan('analyse:blame', ['full_name' => 'acme/eras'])->assertSuccessful();
+
+    $agent = TestObservation::query()->where('identifier', 'was co-authored by an agent')->sole();
+    expect($agent->agent_authored)->toBeTrue()
+        ->and($agent->agent_tool)->toBe('claude')
+        ->and($agent->introduced_commit_sha)->toBe($agentCommit);
+
+    // Blamed with no trace: evidence of absence is false, never null.
+    $legacy = TestObservation::query()->where('identifier', 'test_legacy')->sole();
+    expect($legacy->agent_authored)->toBeFalse()
+        ->and($legacy->agent_tool)->toBeNull();
+
+    // Ethics constraint: no author name or email ever reaches the database.
+    $persisted = TestObservation::query()->get()->toJson();
+    expect($persisted)->not->toContain('Fixture')
+        ->and($persisted)->not->toContain('fixture@example.test')
+        ->and($persisted)->not->toContain('noreply@anthropic.com');
+});
+
 it('re-buckets against an overridden cutoff for sensitivity runs', function () {
     /** @var TestCase $this */
     $this->artisan('analyse:blame', ['full_name' => 'acme/eras', '--cutoff' => '2031-01-01'])
@@ -111,6 +147,8 @@ it('counts an observation without a line range as unattributable and leaves its 
     expect($row->introduced_commit_sha)->toBeNull()
         ->and($row->introduced_author_date)->toBeNull()
         ->and($row->ai_window)->toBeNull()
+        // Not blamed => absent evidence: agent_authored stays null, not false.
+        ->and($row->agent_authored)->toBeNull()
         ->and(TestObservation::query()->whereNotNull('ai_window')->count())->toBe(3);
 });
 

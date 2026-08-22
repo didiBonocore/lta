@@ -172,6 +172,21 @@ class VerifyCommand extends Command
                 $nulls,
                 $scope,
             ));
+
+            // Aa prevalence (H3b): null everywhere means the agent-trace pass has not run
+            // (absent evidence); false means blamed with no trace (evidence of absence).
+            $blamed = $newest->observations()->whereNotNull('agent_authored')->count();
+            if ($blamed === 0) {
+                $this->warnRow($name, 'agent traces', 'agent attribution has not run — agent_authored is empty (re-run analyse:blame)');
+            } else {
+                $traced = $newest->observations()->where('agent_authored', true)->count();
+                $this->okRow($name, 'agent traces', sprintf(
+                    '%.1f%% of blamed methods (%d of %d, newest snapshot)',
+                    $traced / $blamed * 100,
+                    $traced,
+                    $blamed,
+                ));
+            }
         }
 
         // Parse-failure rate (informational — feeds threats-to-validity).

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Analysis\Statistics;
 
 /**
- * Cohen's kappa for the inter-rater validation: tool labels vs the AI second coder's
- * codebook labels on a hand-labelled sample. kappa = (p_o - p_e) / (1 - p_e), where p_o is
- * observed agreement and p_e chance agreement from the raters' marginal distributions.
- * The AI coder labels blind to tool output and never touches the SRQ3 finding — this
- * statistic quantifies agreement only (reflexive threat named in threats-to-validity).
+ * Cohen's kappa for the classifier validation (Appendix C): the test-type classifier's
+ * labels against a human gold standard on a seeded random sample, drawn by
+ * analyse:sample-types and scored by analyse:score-types. kappa = (p_o - p_e) / (1 - p_e),
+ * where p_o is observed agreement and p_e chance agreement from the raters' marginal
+ * distributions. The human labels blind to classifier output — the sample export
+ * deliberately omits test_type — so the statistic quantifies agreement with an
+ * independent coding, not agreement with itself.
  */
 final class CohenKappa
 {

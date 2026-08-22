@@ -25,6 +25,12 @@ use function Laravel\Prompts\progress;
  * runs. Attribution prefers `git log -L <start>,<end>:<path> --reverse` (first commit =
  * introduction), falling back to `git blame -M -C` on the signature line. Deliberately
  * serial: blame is the slow stage, and serial keeps every failure attributable.
+ *
+ * Aa (Appendix B, H3b): each introducing commit's author, committer and co-authorship
+ * trailers are additionally inspected in memory, matched case-insensitively against
+ * config('analyser.agent_patterns'), and reduced to a Boolean indicator with the matched
+ * tool name. No author name or email ever reaches the database, a CSV, a log line, or
+ * console output.
  */
 class BlameCommand extends Command
 {
@@ -37,6 +43,14 @@ class BlameCommand extends Command
 
     /** @var array<string, array{0: string, 1: string}|null> memoised sole-commit per file path */
     private array $soleFileCommits = [];
+
+    /**
+     * Memoised agent-trace verdict per introducing sha — many methods share one commit,
+     * and the process spawn is the cost.
+     *
+     * @var array<string, array{0: bool, 1: string|null}>
+     */
+    private array $agentTraces = [];
 
     public function handle(): int
     {
@@ -68,17 +82,20 @@ class BlameCommand extends Command
             'introduced_commit_sha' => null,
             'introduced_author_date' => null,
             'ai_window' => null,
+            'agent_authored' => null,
+            'agent_tool' => null,
         ]);
 
         $observations = $snapshot->observations()->get();
         $attributed = 0;
         $failed = 0;
+        $traced = 0;
         $windows = ['pre' => 0, 'post' => 0];
 
         progress(
             label: "Blaming {$observations->count()} test methods @ ".substr((string) $snapshot->commit_sha, 0, 12),
             steps: $observations,
-            callback: function (TestObservation $observation, $progress) use ($root, $snapshot, $cutoff, &$attributed, &$failed, &$windows): void {
+            callback: function (TestObservation $observation, $progress) use ($root, $snapshot, $cutoff, &$attributed, &$failed, &$traced, &$windows): void {
                 $progress->hint($observation->file_path);
 
                 $introduction = $this->introducingCommit($root, (string) $snapshot->commit_sha, $observation);
@@ -90,25 +107,32 @@ class BlameCommand extends Command
 
                 [$sha, $authorDate] = $introduction;
                 $window = Carbon::parse($authorDate)->lessThan($cutoff) ? 'pre' : 'post';
+                [$agentAuthored, $agentTool] = $this->agentTraces[$sha] ??= $this->matchAgentIdentity($root, $sha);
 
                 $observation->update([
                     'introduced_commit_sha' => $sha,
                     'introduced_author_date' => Carbon::parse($authorDate),
                     'ai_window' => $window,
+                    'agent_authored' => $agentAuthored,
+                    'agent_tool' => $agentTool,
                 ]);
 
                 $attributed++;
                 $windows[$window]++;
+                if ($agentAuthored) {
+                    $traced++;
+                }
             },
         );
 
         $this->info(sprintf(
-            'Attributed %d of %d test methods (cutoff %s): %d pre-AI, %d post-AI. %d unattributable (columns left null).',
+            'Attributed %d of %d test methods (cutoff %s): %d pre-AI, %d post-AI, %d agent-traced. %d unattributable (columns left null).',
             $attributed,
             $observations->count(),
             $cutoff->toDateString(),
             $windows['pre'],
             $windows['post'],
+            $traced,
             $failed,
         ));
 
@@ -212,6 +236,38 @@ class BlameCommand extends Command
         }
 
         return [$commitSha, Carbon::createFromTimestampUTC($epoch)->toIso8601String()];
+    }
+
+    /**
+     * Aa: does this commit carry a recognised coding-agent identity? Author, committer and
+     * the full message body (which holds Co-authored-by/Co-Authored-By trailers in whatever
+     * casing) are lowercased and searched as one buffer — substring search over the whole
+     * message is what catches the trailer-casing variance Hora & Robbes report; trailers
+     * are deliberately not parsed structurally.
+     *
+     * Ethics constraint: the buffer is inspected in memory and reduced to a Boolean with
+     * the matched tool name, then discarded. If an author string ever needs to outlive
+     * this method, restructure instead.
+     *
+     * @return array{0: bool, 1: string|null}
+     */
+    private function matchAgentIdentity(string $root, string $sha): array
+    {
+        $shown = Process::path($root)->run([
+            'git', 'show', '-s', '--format=%an%x00%ae%x00%cn%x00%ce%x00%B', $sha,
+        ]);
+        if (! $shown->successful()) {
+            return [false, null];
+        }
+
+        $haystack = strtolower($shown->output());
+        foreach ((array) config('analyser.agent_patterns', []) as $pattern) {
+            if (str_contains($haystack, strtolower((string) $pattern))) {
+                return [true, (string) $pattern];
+            }
+        }
+
+        return [false, null];
     }
 
     /** @return array{0: string, 1: string}|null */

@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int $total_assertion_count
  * @property float $mock_assertion_ratio
  * @property int $mock_breadth
+ * @property int $mock_breadth_excluding_facades
  * @property int $max_mock_chain_depth
  * @property array<string>|null $mock_kinds
  * @property int $size_statements
@@ -33,6 +34,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $introduced_commit_sha
  * @property Carbon|null $introduced_author_date
  * @property string|null $ai_window
+ * @property bool|null $agent_authored null = not yet blamed; false = blamed, no agent trace
+ * @property string|null $agent_tool matched agent pattern (never an author name or email)
+ * @property string|null $tool_version Tv — the lta revision that produced this observation
  * @property-read int|null $major Alias of snapshots.framework_version, present when the row
  *                                was selected through DatasetQueries' joined samples.
  */
@@ -46,6 +50,7 @@ class TestObservation extends Model
         'uses_refresh_database' => 'boolean',
         'introduced_author_date' => 'datetime',
         'mock_assertion_ratio' => 'float',
+        'agent_authored' => 'boolean',
     ];
 
     /** @return BelongsTo<Snapshot, $this> */
