@@ -89,8 +89,10 @@ Discover everything with `php artisan list analyse`.
 | S | `analyse:screen [owner/repo] [--manual= --reason=] [--finalise] [--export=]` | Candidate screening (section 3): executes Appendix A's criteria against the acquired clone, records every outcome and measured value in the `candidates` decision log, and generates `corpus.txt` at `--finalise`. |
 | 1 | `analyse:snapshot owner/repo` | Instrument A — walks `composer.json` history **along the first-parent (trunk) line only** and stores one representative commit per integer Laravel major (the last trunk commit still resolving to that major, with its trunk position). A constraint that only ever existed on a feature branch is not a state the project was in; majors that disappear from trunk are pruned with their observations. |
 | 2–4 | `analyse:extract owner/repo [--head]` | Routes each test file to a front end on its parse tree, parses each snapshot's suite (via `git show`, no checkouts) into the IR, and writes one `test_observations` row per test method. Unparsable files land in `parse_failures`; files that parse but no front end owns (e.g. Codeception) land in `unroutable_files` with their detected base class. Neither aborts a run. `--head` extracts the working tree at HEAD instead. |
-| B | `analyse:blame owner/repo [--cutoff=]` | Instrument B — attributes each test method of the newest extracted snapshot to its introducing commit's author-date (`git log -L` on the definition line range) and buckets it pre/post the AI cutoff (default `2022-06-21`; override via `ANALYSER_AI_CUTOFF` or `--cutoff=`). |
-| 6 | `analyse:report [--metric=] [--cutoff=] [--export=]` | Descriptives (n, mean, median, sd, IQR) + OLS trend per major, Mann-Whitney U + Cliff's delta pre/post-AI, and test-type distribution tables. |
+| B | `analyse:blame owner/repo [--cutoff=]` | Instrument B — attributes each test method of the newest extracted snapshot to its introducing commit's author-date (`git log -L` on the definition line range) and buckets it pre/post the AI cutoff (default `2022-06-21`; override via `ANALYSER_AI_CUTOFF` or `--cutoff=`). Also inspects each introducing commit's author/committer fields and co-authorship trailers **in memory** against the recognised agent identities (`agent_patterns`) and persists only a Boolean plus the matched tool name — no author name or email is ever stored. |
+| 6 | `analyse:report [--metric=] [--cutoff=] [--sensitivity] [--export=]` | The analysis half: per-major descriptives; trend (H2a/H2b) via per-repository Theil-Sen slopes + Mann-Kendall tau with a Wilcoxon signed-rank aggregate (the pooled OLS fit stays as a labelled descriptive only); paradigm (H1) as Pf per checkpoint plus the boundary-spanning paired test; era comparison (H3a) via Wilcoxon signed-rank over per-repository pre/post window medians, split by paradigm, with the pooled Mann-Whitney U as labelled secondary; agent-trace prevalence and the H3b comparison behind its gate; attrition; test-type distributions; and Benjamini-Hochberg multiplicity control over everything exploratory. `--sensitivity` re-runs the era blocks across the configured boundary series. |
+| V | `analyse:sample-types --n= --seed= --export=` | Appendix C, step 1 — reproducible seeded random sample of test observations for hand-labelling, exported blind to classifier output (no `test_type` column, blank `human_label`). |
+| V | `analyse:score-types path.csv` | Appendix C, step 2 — scores the returned labels against the classifier: Cohen's kappa with its Landis & Koch band, the confusion matrix (exported as CSV), and the per-category disagreement breakdown. |
 | — | `analyse:verify [owner/repo]` | Operator sanity checks: provenance (HEAD + branch), ascending majors, trunk-position monotonicity (a genuine constraint oscillation warns), duplicates, orphan rows, per-snapshot counts, files-but-zero-observations (the excluded-framework signature), Instrument B coverage, parse-failure rate, unroutable counts per checkpoint. Non-zero exit on hard failures. |
 | — | `analyse:batch file [--screen]` | The mining stages per repository, serially, continue-on-failure. `--screen` runs acquire + screen only, stopping at the manual gate (section 3). |
 
@@ -102,15 +104,19 @@ idempotent — re-running replaces rows rather than duplicating them.
 ```sh
 php artisan analyse:report                                       # all metrics
 php artisan analyse:report --metric=test_assertion_count        # one metric
-php artisan analyse:report --cutoff=2022-06-21                   # cutoff sensitivity re-run
-php artisan analyse:report --export=storage/app/report/pilot.csv
+php artisan analyse:report --cutoff=2022-06-21                   # single-cutoff re-run
+php artisan analyse:report --sensitivity                         # era blocks across the whole boundary series
+php artisan analyse:report --sensitivity --export=storage/app/report/run1.csv
 ```
 
-`--export` writes each block to its own CSV next to the given base path —
-`<base>_descriptives.csv`, `<base>_regression.csv`, `<base>_ai_comparison.csv`,
-`<base>_types_by_version.csv`, `<base>_types_by_window.csv` — so dissertation figures are
-generated from command output, not screenshots. The statistical tests refuse (with a
-warning, not a crash) when either AI window holds fewer than 5 methods.
+`--export` writes each block to its own CSV next to the given base path — `provenance`,
+`descriptives`, `descriptive_fit`, `trend`, `trend_repositories`, `paradigm_by_major`,
+`paradigm_test`, `ai_comparison`, `agent_prevalence`, `agent_comparison`, `attrition`,
+`sensitivity` (with `--sensitivity`), `types_by_version`, `types_by_window`, and
+`multiplicity` — so dissertation figures are generated from command output, not
+screenshots. The statistical tests refuse (with a warning, not a crash) below the floors:
+5 observations per group or window side, 5 repositories per paired test; per-repository
+p-values are suppressed (printed `—`) below series length 10.
 
 ## License
 
