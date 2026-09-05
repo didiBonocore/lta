@@ -2,6 +2,16 @@
 
 All notable changes to the Laravel Test Pattern Analyser will be documented in this file.
 
+## [v0.8.0] - 2026-09-05
+
+### Added
+- **Publishable export artefact (`analyse:anonymise`)**: reads a directory of raw `analyse:report --export` output and writes an anonymised copy safe to publish, implementing the data-availability design decision — the corpus lists (`corpus.txt`, `candidates.txt`) pass through named and unchanged, every measurement-bearing file is aliased to stable `R01…` pseudonyms, and the alias map joining the two is written locally but withheld from the output unless `--emit-map` is passed. Aliases are never renumbered: the map is read if present and only new repositories are assigned, so figures produced from earlier runs stay valid.
+- **Verification gate**: after writing every output file the whole output directory is re-read and the run fails — deleting the output so a partial unsafe copy cannot be published by accident — on any repository name or owner/repo segment, commit SHA (40+ hex unconditionally; 7–39 hex requiring both a letter and a digit, since pure-digit runs of that length are statistics), URL scheme or host, or email address. Exemptions are explicit, per path or per literal value, and every one is listed in the run summary. Files in `--source` with no transformation rule are skipped, never copied.
+- **Decision-log and type-sample transforms**: `decisionlog.csv` drops both commit-SHA columns, aliases `full_name` and the `shared_history_with` counterpart (fork lineage is a finding and survives), and passes free-text cells through only on an exact match against the hardcoded known reason strings — anything else is redacted and counted. `type_sample_labeled_clean.csv` drops `file_path`, `identifier`, and the verbatim `source_excerpt`, adds `classifier_label` read back from the database, and cross-tabulates the result against the published confusion matrix so a drifted dataset cannot silently publish labels the matrix contradicts.
+- **Repository hygiene options**: `--harden` idempotently appends the missing root-level artefact paths to `.gitignore`; `--scan-repo` runs the same four gate rules over every tracked file and reports without failing (the `screening-run.log` lesson — the gate must also check the files nobody remembered to list); `--prune` deletes the raw exports from the working tree after a passing gate, with guards and an explicit warning that git history is untouched.
+- **Appendix and README generation**: `--appendix` writes the Appendix A corpus table (CSV and Markdown, one row per included repository ordered by alias, total-row rates pooled rather than averaged); `--readme` generates the artefact README from the run itself — provenance commit and tool version, the withheld-map statement, the exact reproduce commands, and both method totals with their reconciliation (blame-scope observation rows vs. distinct blamed methods; the difference is duplicate-named tests collapsed by the one-per-method deduplication plus unattributed rows).
+- **`DatasetQueries::paradigmCheckpointAggregates()`**: constant-memory SQL variant of `paradigmByCheckpoint()` with identical Pf semantics, for consumers that need only each checkpoint's major and paradigm without hydrating the full observation set.
+
 ## [v0.7.0] - 2026-08-22
 
 ### Breaking Changes
