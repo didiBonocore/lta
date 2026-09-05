@@ -267,4 +267,36 @@ final class DatasetQueries
 
         return $checkpoints;
     }
+
+    /**
+     * Constant-memory variant of paradigmByCheckpoint() for consumers that need only each
+     * checkpoint's major and pf (analyse:anonymise --appendix): the same distinct-routed-file
+     * counting, pushed into SQL so the full observation set is never hydrated. The pf
+     * semantics must stay identical to paradigmByCheckpoint()'s — 0 when no file is Pest,
+     * 2 when every file is, 1 otherwise.
+     *
+     * @return Collection<int, array{repository_id: int, major: int, pf: 0|1|2}>
+     */
+    public static function paradigmCheckpointAggregates(): Collection
+    {
+        return TestObservation::query()
+            ->join('snapshots', 'snapshots.id', '=', 'test_observations.snapshot_id')
+            ->where('snapshots.kind', 'version_boundary')
+            ->groupBy('test_observations.repository_id', 'snapshots.framework_version')
+            ->selectRaw('test_observations.repository_id as repository_id, snapshots.framework_version as major')
+            ->selectRaw('count(distinct test_observations.file_path) as total_files')
+            ->selectRaw("count(distinct case when test_observations.front_end = 'pest' then test_observations.file_path end) as pest_files")
+            ->orderBy('test_observations.repository_id')
+            ->orderBy('snapshots.framework_version')
+            ->get()
+            ->map(fn (TestObservation $row): array => [
+                'repository_id' => (int) $row->getAttribute('repository_id'),
+                'major' => (int) $row->getAttribute('major'),
+                'pf' => match (true) {
+                    (int) $row->getAttribute('pest_files') === 0 => 0,
+                    (int) $row->getAttribute('pest_files') === (int) $row->getAttribute('total_files') => 2,
+                    default => 1,
+                },
+            ]);
+    }
 }
