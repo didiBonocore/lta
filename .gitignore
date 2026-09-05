@@ -6,8 +6,14 @@
 /public/storage
 /storage/*.key
 /storage/corpus
+/storage/report
 /storage/pail
 /vendor
+/corpus.txt
+/decision-log.txt
+/decisionlog.csv
+/*.log
+/exports*
 .env
 .env.backup
 .env.production
