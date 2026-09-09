@@ -808,12 +808,31 @@ class AnonymiseCommand extends Command
             )
             : '';
 
+        // The reproduce block must target the analyser that produced the exports, not the one
+        // that anonymised them. `tool_version` is a `git describe` output, so it is only a
+        // checkout-able tag when it has the bare-tag shape AND the tag actually resolves.
+        $isCleanTag = preg_match('/^v\d+\.\d+\.\d+$/', $toolVersion) === 1
+            && Process::path(base_path())->run(['git', 'rev-parse', '--verify', '--quiet', "refs/tags/{$toolVersion}"])->successful();
+        $checkoutDescription = $isCleanTag
+            ? "at tag `{$toolVersion}`"
+            : "at analyser version `{$toolVersion}`";
+        $reproduceSteps = implode("\n", array_filter([
+            $isCleanTag ? "    git checkout {$toolVersion}" : null,
+            '    php artisan migrate',
+            '    php artisan analyse:batch --screen candidates.txt',
+            '    # answer the manual tutorial/demo criterion per candidate (analyse:screen --manual), then:',
+            '    php artisan analyse:screen --finalise --export=storage/app/report/decisionlog.csv',
+            '    php artisan analyse:batch corpus.txt',
+            '    php artisan analyse:report --sensitivity --export=storage/app/report/run1.csv',
+            '    php artisan analyse:anonymise --source=storage/app/report --appendix --readme',
+        ]));
+
         $readme = <<<MD
         # Anonymised analysis exports
 
         {$corpus}This directory is the anonymised, publishable copy of the raw `analyse:report --export`
-        output, produced by `php artisan analyse:anonymise` at commit `{$sha}` with tool version
-        `{$toolVersion}`. {$reconciliation}
+        output. The exports were produced by the analyser at version `{$toolVersion}`.
+        This anonymised copy was produced from them by `php artisan analyse:anonymise` at commit `{$sha}`. {$reconciliation}
         ## How repositories are identified
 
         Every measurement-bearing file identifies repositories by a stable alias (`R01`, `R02`, ...).
@@ -825,15 +844,12 @@ class AnonymiseCommand extends Command
         ## Reproducibility
 
         `corpus.txt` and `candidates.txt` are the study's input lists, published **named and unmodified**,
-        so the study is reproducible end to end. From a clean checkout of the analyser at the commit above:
+        so the study is reproducible end to end. From a clean checkout of the analyser {$checkoutDescription}:
 
-            php artisan migrate
-            php artisan analyse:batch --screen candidates.txt
-            # answer the manual tutorial/demo criterion per candidate (analyse:screen --manual), then:
-            php artisan analyse:screen --finalise --export=storage/app/report/decisionlog.csv
-            php artisan analyse:batch corpus.txt
-            php artisan analyse:report --sensitivity --export=storage/app/report/run1.csv
-            php artisan analyse:anonymise --source=storage/app/report --appendix --readme
+        {$reproduceSteps}
+
+        The final step requires `analyse:anonymise`, which was added after `{$toolVersion}`; run it from
+        a later checkout of the analyser against the exports produced above.
 
         A reader who re-runs the pipeline over the named corpus derives every measurement themselves,
         which is precisely what reproducibility means.
