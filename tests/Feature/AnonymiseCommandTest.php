@@ -8,6 +8,7 @@ use App\Models\Snapshot;
 use App\Models\TestObservation;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 use Tests\Support\GitFixtureRepo;
 use Tests\TestCase;
 
@@ -506,6 +507,34 @@ it('generates a README that carries the provenance, the withheld-map statement, 
 
     $readme = File::get(anonymiseOut().'/README.md');
     expect($readme)->toContain('v0.0.0-test')
+        ->and($readme)->toContain('The exports were produced by the analyser at version')
+        ->and($readme)->toContain('This anonymised copy was produced')
         ->and($readme)->toContain('not** included')
         ->and($readme)->toContain('source_excerpt');
+});
+
+it('emits a git checkout line when tool_version is a bare tag that resolves in the repository', function () {
+    makeAnonymiseExportDir(seedAnonymiseRepos());
+    File::put(anonymiseSource().'/run1_provenance.csv', "tool_version,ai_cutoff\nv1.2.3,2022-06-21\n");
+    // The repository carries no v1.2.3 tag; fake only the verify call so the other git calls run for real.
+    Process::fake(['*rev-parse*refs/tags/v1.2.3*' => Process::result('deadbeefdeadbeefdeadbeefdeadbeefdeadbeef')]);
+
+    runAnonymise(['--readme' => true])->assertSuccessful();
+
+    $readme = File::get(anonymiseOut().'/README.md');
+    expect($readme)->toContain('at tag `v1.2.3`')
+        ->and($readme)->toContain('git checkout v1.2.3')
+        ->and($readme)->toContain('added after `v1.2.3`');
+});
+
+it('leaves the checkout to the reader when tool_version is a git-describe shape rather than a tag', function () {
+    makeAnonymiseExportDir(seedAnonymiseRepos());
+    File::put(anonymiseSource().'/run1_provenance.csv', "tool_version,ai_cutoff\nv1.2.3-4-gdeadbee,2022-06-21\n");
+
+    runAnonymise(['--readme' => true])->assertSuccessful();
+
+    $readme = File::get(anonymiseOut().'/README.md');
+    expect($readme)->toContain('at analyser version `v1.2.3-4-gdeadbee`')
+        ->and($readme)->not->toContain('git checkout')
+        ->and($readme)->not->toContain('at tag');
 });
